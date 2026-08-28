@@ -30,14 +30,13 @@
 		{
 			name: "Salvaging",
 			icon: faRecycle,
-			href: "/404"
+			href: "/salvage"
 		}
 	]
 
 	let sidebarOpen = $state(false);
 
 	let isActive = (href: string) => {
-		console.log(page.url.pathname);
 		return href === "/" ? page.url.pathname === "/" : page.url.pathname.startsWith(href);
 	}
 </script>
@@ -54,7 +53,7 @@
 	/>
 
 <!-- main container for sidebar + content -->
-<div class="min-h-screen">
+<div class="min-h-screen bg-primary-600">
 
 	<!-- sidebar backdrop -->
 	<div
@@ -114,22 +113,21 @@
 	</aside>
 
 	<main class="min-w-0 lg:ml-72">
-		<header class="flex h-16 items-center px-4 shadow-sm lg:hidden">
+		<header class="flex h-16 items-center px-4 shadow-sm lg:hidden bg-primary-600">
 			<button aria-label="Open sidebar" class="rounded-md p-2" onclick="{() => (sidebarOpen = true)}">
-				<Icon class="h-5 w-5" icon="{faBars}"/>
+				<Icon class="h-5 w-5 text-white" icon="{faBars}"/>
 			</button>
 		</header>
 
-		{@render children()}
+		<!-- empty space for consistent top margin -->
+		<div class="bg-primary-600 h-2"></div>
+
+		<!-- main content area -->
+		<div class="min-h-10/12 rounded-md bg-white ml-2 mr-2 p-4">
+			{@render children()}
+		</div>
+
 	</main>
+
+	<footer class=""></footer>
 </div>
-
-
-{@render children()}
-
-<!-- TODO: make footer stick to bottom of page, but not stickied to bottom of screen -->
-<footer class="footer">
-	<div class="content has-text-centered">
-		this is potentially a footer!
-	</div>
-</footer>
