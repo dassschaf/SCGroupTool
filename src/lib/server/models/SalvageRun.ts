@@ -1,0 +1,4 @@
+class SalvageRun {
+    int id;
+    
+}
