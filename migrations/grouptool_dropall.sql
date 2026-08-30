@@ -5,3 +5,5 @@ DROP TABLE cargo_lot;
 DROP TABLE cargo_types;
 DROP TABLE stations;
 
+DROP TYPE system_enum;
+DROP TYPE landing_pad_size;
