@@ -19,3 +19,8 @@
 button {
     cursor: pointer;
 }
+
+.main-background {
+    background: #005177;
+    background: linear-gradient(60deg,rgba(0, 81, 119, 1) 0%, rgba(237, 83, 83, 1) 100%);
+}
