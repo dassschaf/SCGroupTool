@@ -17,6 +17,7 @@
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@types/pg": "^8.23.1",
+		"bun": "^1.4.0",
 		"sass-embedded": "^1.103.1",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
@@ -26,6 +27,7 @@
 	"dependencies": {
 		"@sveltejs/adapter-node": "^5.5.7",
 		"@tailwindcss/vite": "^4.3.3",
+		"@types/bun": "^1.4.0",
 		"better-auth": "^1.7.2",
 		"pg": "^8.23.0",
 		"svelte-preprocess": "^6.0.5",
