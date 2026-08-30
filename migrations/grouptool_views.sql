@@ -12,6 +12,20 @@ FROM "salvage_runs" s
          JOIN cargo_event_summary ces on s.id = ces.salvage_run_id
 GROUP BY m.salvage_run_id, ces.salvage_run_id, s.id;
 
+CREATE VIEW "salvage_run_list" AS
+SELECT
+    s.id as id,
+    u.name as owner_name,
+    u.image as owner_image,
+    s.created_at as created_at,
+    COUNT(distinct m.user_id) as member_count,
+    SUM(ces.cargo_amount * ces.price_per_unit - ces.fees) as profit
+FROM "salvage_runs" s
+         JOIN "user" u on s.owner_id = u.id
+         JOIN salvage_run_membership m on s.id = m.salvage_run_id
+         JOIN "cargo_event_summary" ces on s.id = ces.salvage_run_id
+GROUP BY s.id, u.id;
+
 CREATE VIEW "cargo_event_summary" AS
 SELECT
     ce.id as id,
