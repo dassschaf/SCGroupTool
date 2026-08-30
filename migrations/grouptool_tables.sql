@@ -129,7 +129,7 @@ CREATE TABLE cargo_event
     station_id     INT
         REFERENCES "stations" (id),
 
-    type_id        cargo_event_type,
+    type        cargo_event_type,
 
     created_at     TIMESTAMPTZ
         NOT NULL
