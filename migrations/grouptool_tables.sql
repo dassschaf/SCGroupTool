@@ -4,7 +4,7 @@ CREATE TABLE salvage_runs
         GENERATED ALWAYS AS IDENTITY
         PRIMARY KEY,
 
-    owner      TEXT
+    owner_id   TEXT
         NOT NULL
         REFERENCES "user" (id),
 
@@ -112,34 +112,7 @@ VALUES ('Grim Hex', 'Stanton', false, true, 'XL'),
        ('Stanton Gateway', 'Nyx', false, true, 'L'),
        ('Ruin Station', 'Pyro', true, true, 'L'),
        ('Stanton Gateway', 'Pyro', false, true, 'L'),
-       ('Nyx Gateway', 'Pyro', false, true, 'L')
-
-CREATE TABLE cargo_lot
-(
-    id          INT
-        GENERATED ALWAYS AS IDENTITY
-        PRIMARY KEY,
-
-    cargo_type  INT
-        NOT NULL
-        REFERENCES "cargo_types" (id),
-
-    salvage_run INT
-        NOT NULL
-        REFERENCES "salvage_runs" (id),
-
-    station     INT
-        NOT NULL
-        REFERENCES "stations" (id),
-
-    amount      INT
-        NOT NULL,
-
-    -- reference to event iff. consumed
-    consumed_by INT
-        REFERENCES "cargo_event" (id)
-        DEFAULT (NULL)
-);
+       ('Nyx Gateway', 'Pyro', false, true, 'L');
 
 -- cargo event type can be an enum instead of a table
 CREATE TYPE cargo_event_type AS ENUM ('REFINE', 'SELL');
@@ -150,13 +123,13 @@ CREATE TABLE cargo_event
         GENERATED ALWAYS AS IDENTITY
         PRIMARY KEY,
 
-    salvage_run    INT
+    salvage_run_id INT
         REFERENCES salvage_runs (id),
 
-    station        INT
+    station_id     INT
         REFERENCES "stations" (id),
 
-    type           cargo_event_type,
+    type_id        cargo_event_type,
 
     created_at     TIMESTAMPTZ
         NOT NULL
@@ -169,16 +142,29 @@ CREATE TABLE cargo_event
     price_per_unit INT
 );
 
-/*
-CREATE TABLE cargo_event_consumption
+CREATE TABLE cargo_lot
 (
-    lot_id   INT
-        UNIQUE -- cargo can only be consumed once
-        REFERENCES "cargo_lot" (id),
+    id             INT
+        GENERATED ALWAYS AS IDENTITY
+        PRIMARY KEY,
 
-    event_id INT
-        REFERENCES "cargo_event" (id),
+    cargo_type_id  INT
+        NOT NULL
+        REFERENCES "cargo_types" (id),
 
-    PRIMARY KEY (lot_id, event_id)
+    salvage_run_id INT
+        NOT NULL
+        REFERENCES "salvage_runs" (id),
+
+    station_id     INT
+        NOT NULL
+        REFERENCES "stations" (id),
+
+    amount         INT
+        NOT NULL,
+
+    -- reference to event iff. consumed
+    consumed_by_id INT
+        REFERENCES "cargo_event" (id)
+        DEFAULT (NULL)
 );
-*/
