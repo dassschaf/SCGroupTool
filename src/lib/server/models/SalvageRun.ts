@@ -1,4 +1,0 @@
-class SalvageRun {
-    int id;
-    
-}

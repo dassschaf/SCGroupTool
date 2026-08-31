@@ -168,3 +168,20 @@ CREATE TABLE cargo_lot
         REFERENCES "cargo_event" (id)
         DEFAULT (NULL)
 );
+
+CREATE TABLE claim_fees (
+    id             INT
+        GENERATED ALWAYS AS IDENTITY
+        PRIMARY KEY,
+
+    salvage_run_id INT
+        NOT NULL
+        REFERENCES "salvage_runs" (id),
+
+    fee INT
+        NOT NULL
+        CHECK (fee >= 0),
+
+    comment TEXT
+        DEFAULT('--')
+);
