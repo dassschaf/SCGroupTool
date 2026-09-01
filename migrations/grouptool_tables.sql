@@ -10,18 +10,25 @@ CREATE TABLE salvage_runs
 
     created_at TIMESTAMPTZ
         NOT NULL
-        DEFAULT now()
+        DEFAULT now(),
 
+    is_finished bool
+        NOT NULL
+        DEFAULT false
 );
 
 -- m:n relationship
 CREATE TABLE salvage_run_membership
 (
     salvage_run_id INT
-        REFERENCES "salvage_runs" (id),
+        REFERENCES "salvage_runs" (id)
+        ON DELETE CASCADE,
 
     user_id        TEXT NOT NULL
         REFERENCES "user" (id),
+
+    was_paid BOOL
+        DEFAULT(false),
 
     PRIMARY KEY (salvage_run_id, user_id)
 );
@@ -124,7 +131,8 @@ CREATE TABLE cargo_event
         PRIMARY KEY,
 
     salvage_run_id INT
-        REFERENCES salvage_runs (id),
+        REFERENCES salvage_runs (id)
+        ON DELETE CASCADE,
 
     station_id     INT
         REFERENCES "stations" (id),
@@ -150,11 +158,13 @@ CREATE TABLE cargo_lot
 
     cargo_type_id  INT
         NOT NULL
-        REFERENCES "cargo_types" (id),
+        REFERENCES "cargo_types" (id)
+        ON DELETE CASCADE,
 
     salvage_run_id INT
         NOT NULL
-        REFERENCES "salvage_runs" (id),
+        REFERENCES "salvage_runs" (id)
+        ON DELETE CASCADE,
 
     station_id     INT
         NOT NULL
@@ -165,7 +175,7 @@ CREATE TABLE cargo_lot
 
     -- reference to event iff. consumed
     consumed_by_id INT
-        REFERENCES "cargo_event" (id)
+        REFERENCES "cargo_event" (id) ON DELETE CASCADE
         DEFAULT (NULL)
 );
 
@@ -178,7 +188,7 @@ CREATE TABLE claim_fees (
         NOT NULL
         REFERENCES "salvage_runs" (id),
 
-    fee INT
+    fees INT
         NOT NULL
         CHECK (fee >= 0),
 
