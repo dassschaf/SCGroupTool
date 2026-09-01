@@ -1,2 +1,1 @@
-<h1>about</h1>
-<p>this is the about page.</p>
+<p>This is the about page. move along, there's nothing to see here.</p>
