@@ -53,7 +53,7 @@
 	/>
 
 <!-- main container for sidebar + content -->
-<div class="min-h-screen main-background">
+<div class="min-h-screen">
 
 	<!-- sidebar backdrop -->
 	<div
@@ -67,7 +67,7 @@
 	<!-- sidebar -->
 	<aside
 		class={[
-			"fixed inset-y-0 left-0 z-50 w-72 text-white transition-transform lg:translate-x-0",
+			"fixed inset-y-0 left-0 z-50 w-72 text-white transition-transform lg:translate-x-0 main-background",
 			sidebarOpen ? "translate-x-0" : "-translate-x-full"
 		]}>
 
@@ -115,20 +115,11 @@
 	<main class="min-w-0 lg:ml-72">
 		<header class="flex h-16 items-center px-4 shadow-sm lg:hidden">
 			<button aria-label="Open sidebar" class="rounded-md p-2" onclick="{() => (sidebarOpen = true)}">
-				<Icon class="h-5 w-5 text-white" icon="{faBars}"/>
+				<Icon class="h-5 w-5 text-primary-600" icon="{faBars}"/>
 			</button>
 		</header>
 
-		<!-- empty space for consistent top margin -->
-		<!-- <div class="bg-primary-600 h-2"></div> -->
-
 		<!-- main content area -->
-		<div class="h-2"></div>
-		<div class="rounded-md bg-white ml-2 mr-2 p-4 top-2">
-			{@render children()}
-		</div>
-
+		{@render children()}
 	</main>
-
-	<footer class=""></footer>
 </div>
