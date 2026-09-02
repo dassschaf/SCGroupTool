@@ -25,6 +25,6 @@ INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, finishes_
 VALUES (1, 1, 'SELL', now(), now(), 1234, 8000);
 UPDATE cargo_lot SET consumed_by_id = 2 WHERE id = 2;
 
-INSERT INTO claim_fees (salvage_run_id, fee, comment)
+INSERT INTO claim_fees (salvage_run_id, fees, comment)
 VALUES (1, 20000, '890 Jump'),
        (1, 500, 'I forgor');

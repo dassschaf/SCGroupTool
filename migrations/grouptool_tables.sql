@@ -190,7 +190,7 @@ CREATE TABLE claim_fees (
 
     fees INT
         NOT NULL
-        CHECK (fee >= 0),
+        CHECK (fees >= 0),
 
     comment TEXT
         DEFAULT('--')
