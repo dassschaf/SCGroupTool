@@ -9,7 +9,7 @@ export const getUserInfo = query(z.string(), async (userid) => {
     if (!locals.user) error(401, "Unauthorized: You are not logged in.");
 
     return [await sql<typeof userSchema>`
-        SELECT * FROM "user" WHERE user.id = ${userid};
+        SELECT * FROM "user" WHERE "user"."id" = ${userid};
     `];
 });
 
@@ -17,8 +17,12 @@ export const searchUserByName = query (z.string(), async (username) => {
     const { locals } = getRequestEvent();
     if (!locals.user) error(401, "Unauthorized: You are not logged in.");
 
-    return await sql<typeof userSchema>`
-        SELECT * FROM "user" WHERE user.name LIKE '%${username}%';
+    // do not search for too short inputs (3 letters + 2 %)
+    if (username.length < 5)
+        return [];
+
+    return await sql<typeof userSchema[]>`
+        SELECT * FROM "user" WHERE "user"."name" LIKE ${username};
     `;
 });
 

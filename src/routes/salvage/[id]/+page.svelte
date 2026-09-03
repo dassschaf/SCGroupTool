@@ -4,13 +4,24 @@
     import Icon from "$lib/components/Icon.svelte";
     import {faPlus, faSnowflake, faXmark} from "@fortawesome/free-solid-svg-icons";
     import Button from "$lib/components/Button.svelte";
+    import Input from "$lib/components/Input.svelte";
+    import {searchUserByName} from "$lib/database/user.remote.ts";
 
     let { data }: PageProps = $props();
 
     let formSidebarOpen = $state(false);
+    let sidebarHeading = $state("");
+    let userSearchValue = $state("");
 
     $inspect(data);
 </script>
+
+<svelte:window
+        onkeydown={(e) => {
+		if (e.key === "Escape") formSidebarOpen = false;
+	}}
+/>
+
 
 <!-- sidebar backdrop -->
 <div
@@ -29,7 +40,7 @@
 		]}>
 
     <div class="flex h-full flex-col px-4">
-        <div class="flex h-16 items-center gap-3">
+        <div class="flex flex-row h-16 items-center justify-center align-middle gap-3">
             <button
                     aria-label="Close sidebar"
                     class="rounded-md p-2"
@@ -37,15 +48,37 @@
             >
                 <Icon class="h-6 w-6" icon={faXmark} />
             </button>
+
+            <h1 class="flex-auto text-4xl font-bold tracking-tight text-center text-heading">
+                {sidebarHeading}
+            </h1>
         </div>
 
-        <nav class="flex-1 py-4">
-            <h1>Add member</h1>
+        <!-- gap -->
+        <div class="h-8"></div>
 
-            <ul class="space-y-1">
+        <!-- user serachbar -->
+        <Input
+                bind:value={userSearchValue}
+                autocomplete="off"
+                autofocus
+                class="w-full"
+                placeholder="Search users..."
+                type="search"
+        />
 
-            </ul>
-        </nav>
+        <div class="h-8"></div>
+        <div class="flex justify-center align-middle">
+            {#each searchUserByName("%" + userSearchValue + "%").current as user}
+                <Button
+                        class="min-w-fit p-4 h-12"
+                >
+                    <User class="flex-1" username={user.name} image={user.image}/>
+                </Button>
+            {:else}
+                <p class="flex-auto text-center">Enter at least three characters.</p>
+            {/each}
+        </div>
     </div>
 </aside>
 
@@ -151,11 +184,15 @@
         {:else}
             No members.
         {/if}
-        <div class="h-8"/>
+        <div class="h-8"></div>
         <div class="flex flex-row-reverse">
             <Button
                 class="min-w-fit h-10 float-right p-2"
-                onclick={() => { formSidebarOpen = true; }}
+                onclick={() => {
+                    sidebarHeading = "Add member";
+                    currentForm = userSearch;
+                    formSidebarOpen = true;
+                }}
             >
                 Add member <Icon icon={faPlus} class="w-8 h-8"/>
             </Button>
@@ -164,7 +201,7 @@
     </div>
 </div>
 
-<div class="h-8"/>
+<div class="h-8"></div>
 
 <!-- cargo overview -->
 <div>
