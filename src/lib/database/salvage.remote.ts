@@ -81,12 +81,14 @@ export const getSalvageRunMemberList = query(
         return await sql<{
             name: string,
             image: string,
-            was_paid: boolean
+            was_paid: boolean,
+						id: string
         }[]>`
             SELECT
                 u.name,
                 u.image,
-                srm.was_paid 
+                srm.was_paid,
+                u.id
             FROM
                 salvage_run_membership srm
                 JOIN "user" u ON srm.user_id = u.id
