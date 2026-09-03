@@ -50,6 +50,12 @@
                     {/if}
                 </td>
             </tr>
+        {:else}
+            <tr>
+                <td colspan="6">
+                    You're not part of any salvage runs (yet).
+                </td>
+            </tr>
         {/each}
         </tbody>
     </table>
