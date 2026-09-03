@@ -13,7 +13,7 @@
         href?: undefined;
     } & HTMLButtonAttributes) = $props();
 
-    const baseClasses = "flex justify-center items-center text-center gap-3 py-1 m-1 text-sm text-white bg-secondary-600 rounded-md transition-colours hover:bg-secondary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-600  disabled:cursor-not-allowed disabled:opacity-50 p-1 justify-center";
+    const baseClasses = "flex justify-center items-center text-center gap-3 py-1 m-1 text-sm bg-white text-secondary-600 rounded-md transition-colours hover:bg-secondary-600 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-600 disabled:cursor-not-allowed disabled:opacity-50 p-1 justify-center duration-200";
 </script>
 
 {#if restProps.href !== undefined}
