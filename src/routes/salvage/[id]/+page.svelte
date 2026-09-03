@@ -1,219 +1,194 @@
 <script lang="ts">
-    import type { PageProps } from "./$types";
-    import User from "$lib/components/User.svelte";
-    import Icon from "$lib/components/Icon.svelte";
-    import {faPlus, faSnowflake, faXmark} from "@fortawesome/free-solid-svg-icons";
-    import Button from "$lib/components/Button.svelte";
-    import Input from "$lib/components/Input.svelte";
-    import {searchUserByName} from "$lib/database/user.remote.ts";
+	import type { PageProps } from "./$types";
+	import User from "$lib/components/User.svelte";
+	import Icon from "$lib/components/Icon.svelte";
+	import {faCheck, faPlus, faSnowflake, faXmark} from "@fortawesome/free-solid-svg-icons";
+	import Button from "$lib/components/Button.svelte";
+	import Input from "$lib/components/Input.svelte";
+	import { searchUserByName } from "$lib/database/user.remote.ts";
+	import FormSidebar from "$lib/components/FormSidebar.svelte";
 
-    let { data }: PageProps = $props();
+	let { data }: PageProps = $props();
 
-    let formSidebarOpen = $state(false);
-    let sidebarHeading = $state("");
-    let userSearchValue = $state("");
+	// sidebar states
+	let addMemberSidebarOpen = $state(false);
+	let anySidebarOpen = $derived(addMemberSidebarOpen);
 
-    $inspect(data);
+	// search value states
+	let userSearchValue = $state("");
+
+	// eslint-disable-next-line svelte/no-inspect
+	$inspect(data);
 </script>
 
 <svelte:window
-        onkeydown={(e) => {
-		if (e.key === "Escape") formSidebarOpen = false;
+	onkeydown={(e) => {
+		if (e.key === "Escape") addMemberSidebarOpen = false;
 	}}
 />
 
-
 <!-- sidebar backdrop -->
 <div
-        class={[
-			"fixed inset-0 z-50 bg-black/50 transition-opacity",
-			formSidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-		]}
-        onclick="{() => (formSidebarOpen = false)}"
+	class={[
+		"fixed inset-0 z-50 bg-black/50 transition-opacity",
+		anySidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+	]}
+	onclick={() => {
+		addMemberSidebarOpen = false;
+	}}
 ></div>
 
-<!-- sidebar -->
-<aside
-        class={[
-			"fixed inset-y-0 right-0 z-50 w-1/2 text-white transition-transform main-background",
-			formSidebarOpen ? "translate-x-0" : "translate-x-full"
-		]}>
+<!-- add member sidebar -->
+<FormSidebar bind:sidebarFlag={addMemberSidebarOpen} formHeading="Add Members">
+	<!-- user search bar -->
+	<Input
+		bind:value={userSearchValue}
+		autocomplete="off"
+		autofocus
+		class="w-full"
+		placeholder="Search users..."
+		type="search"
+	/>
 
-    <div class="flex h-full flex-col px-4">
-        <div class="flex flex-row h-16 items-center justify-center align-middle gap-3">
-            <button
-                    aria-label="Close sidebar"
-                    class="rounded-md p-2"
-                    onclick={() => (formSidebarOpen = false)}
-            >
-                <Icon class="h-6 w-6" icon={faXmark} />
-            </button>
+	<!-- spacer -->
+	<div class="h-8"></div>
 
-            <h1 class="flex-auto text-4xl font-bold tracking-tight text-center text-heading">
-                {sidebarHeading}
-            </h1>
-        </div>
+	<!-- user list -->
+	<div class="flex justify-center align-middle">
+		{#each searchUserByName("%" + userSearchValue + "%").current as user (user.id)}
+			<Button class="h-12 min-w-fit p-4">
+				<User class="flex-1" username={user.name} image={user.image} />
+			</Button>
+		{:else}
+			<p class="flex-auto text-center">Enter at least three characters.</p>
+		{/each}
+	</div>
+</FormSidebar>
 
-        <!-- gap -->
-        <div class="h-8"></div>
+<div class="m-4 flex flex-row rounded-md bg-gray-200 p-4">
+	<!-- owner & financial info -->
+	<div class="flex flex-4 flex-col">
+		<p class="text-center font-semibold">run #{data.id} &mdash; Overview</p>
+		<table
+			class={[
+				"w-full table-auto divide-y divide-gray-200",
+				"[&_th]:px-2 [&_th]:text-center [&_th]:text-sm [&_th]:font-semibold [&_th]:tracking-wide  [&_th]:uppercase",
+				"[&_thead_tr]:h-10",
+				"[&_tbody]:divide-y [&_tbody]:divide-gray-200",
+				"[&_tbody_tr]:h-10",
+				"[&_td]:px-2 [&_td]:text-sm [&_td]:whitespace-nowrap"
+			]}
+		>
+			<thead>
+				<tr>
+					<th colspan={(data.memberList.length > 1) ? 3 : 6} class="text-primary-600"
+						>Profit: {Intl.NumberFormat().format(data.financialOverview.profit)} aUEC</th
+					>
+					<th colspan="3" class="text-primary-600"
+						>{#if data.memberList.length > 1}
+							Payout: {Intl.NumberFormat().format(
+								(data.financialOverview.profit / data.memberList.length) * 0.995
+							)} aUEC
+						{/if}</th
+					>
+				</tr>
+				<tr>
+					<th colspan="3" class="text-green-600"
+						>Revenue: {Intl.NumberFormat().format(
+							data.financialOverview.sales_revenue.reduce((sum, sale) => (sum += sale.revenue), 0)
+						)} aUEC</th
+					>
+					<th colspan="3" class="text-secondary-600"
+						>Expenses: {Intl.NumberFormat().format(
+							data.financialOverview.claims.reduce((sum, claim) => (sum += claim.fees), 0) +
+								data.financialOverview.event_fees.reduce((sum, event) => (sum += event.fees), 0)
+						)} aUEC</th
+					>
+				</tr>
+			</thead>
+			<tbody>
+				{#each data.financialOverviewRows as r}
+					<tr>
+						{#if r.sales}
+							<td class="text-right">{r.sales.cargo_name}</td>
+							<td class="text-center"
+								>{r.sales.station_name}<br>
+								<small>{r.sales.system_name}</small></td
+							>
+							<td class="text-left">{Intl.NumberFormat().format(r.sales.revenue)} aUEC</td>
+						{:else}
+							<td colspan="3"></td>
+						{/if}
+						{#if r.expenses}
+							<td class="text-right">{r.expenses.type}</td>
+							<td class="text-center"
+								>{r.expenses.comment}<br>
+								{#if r.expenses.comment_sub !== ""}<small>{r.expenses.comment_sub}</small>{/if}</td
+							>
+							<td class="text-left">{Intl.NumberFormat().format(r.expenses.fees)} aUEC</td>
+						{:else}
+							<td colspan="3"></td>
+						{/if}
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 
-        <!-- user serachbar -->
-        <Input
-                bind:value={userSearchValue}
-                autocomplete="off"
-                autofocus
-                class="w-full"
-                placeholder="Search users..."
-                type="search"
-        />
+	<div class="w-8" />
 
-        <div class="h-8"></div>
-        <div class="flex justify-center align-middle">
-            {#each searchUserByName("%" + userSearchValue + "%").current as user}
-                <Button
-                        class="min-w-fit p-4 h-12"
-                >
-                    <User class="flex-1" username={user.name} image={user.image}/>
-                </Button>
-            {:else}
-                <p class="flex-auto text-center">Enter at least three characters.</p>
-            {/each}
-        </div>
-    </div>
-</aside>
-
-<div class="flex flex-row m-4 p-4 bg-gray-200 rounded-md">
-    <!-- owner & financial info -->
-    <div class="flex-5 flex flex-col">
-        <p class="text-center font-semibold">run #{data.id} &mdash; Overview</p>
-        <div class="flex justify-center items-start flex-row [&_table]:m-4 [&_table]:w-full">
-            <!-- 1 column table: revenue -->
-            <table>
-                <thead>
-                    <tr>
-                        <th class="text-green-600">Revenue</th>
-                        <th class="text-green-600">{ Intl.NumberFormat().format(data.financialOverview.sales_revenue.reduce((sum, sale) => sum += sale.revenue, 0))} aUEC</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {#each data.financialOverview.sales_revenue as r}
-                    <tr>
-                        <td>{r.cargo_name}</td>
-                        <td class="flex flex-col"><span>{r.station_name}</span><small>{r.system_name}</small></td>
-                        <td class="text-right">{ Intl.NumberFormat().format(r.revenue) } aUEC</td>
-                    </tr>
-                {/each}
-                </tbody>
-            </table>
-
-            <!-- 1 column table: expenses -->
-            <table>
-                <thead>
-                <tr>
-                    <th class="text-secondary-600">Expenses</th>
-                    <th class="text-secondary-600">{ Intl.NumberFormat().format(data.financialOverview.claims.reduce((sum, claim) => sum += claim.fees, 0) + data.financialOverview.event_fees.reduce((sum, event) => sum += event.fees, 0)) } aUEC</th>
-                </tr>
-                </thead>
-                <tbody>
-                {#each data.financialOverview.claims as claim}
-                <tr>
-                    <td>Salvage claim</td>
-                    <td>{ (claim.comment === "--") ? "" : claim.comment }</td>
-                    <td class="text-right">{ Intl.NumberFormat().format(claim.fees) } aUEC</td>
-                </tr>
-                {/each}
-                {#each data.financialOverview.event_fees as event}
-                    <tr>
-                        <td>{ event.type === "REFINE" ? "Refinery fees" : "Sales fees" }</td>
-                        <td class="flex flex-col"><span>{event.station_name}</span><small>{event.system_name}</small></td>
-                        <td class="text-right">{ Intl.NumberFormat().format(event.fees) } aUEC</td>
-                    </tr>
-                {/each}
-                </tbody>
-            </table>
-
-            <!-- 1 column table: profit -->
-            <table>
-                <thead>
-                <tr>
-                    <th colspan="2" class="text-primary-600">Profit</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td class="text-right">{ Intl.NumberFormat().format(data.financialOverview.profit) } aUEC</td>
-                    <td class="text-left"><small class="pl-2">total</small></td>
-                </tr>
-                <tr>
-                    <td class="text-right">{ Intl.NumberFormat().format(data.financialOverview.profit / data.memberList.length) } aUEC</td>
-                    <td class="text-left"><small class="pl-2">pay per member</small></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-    </div>
-
-    <div class="w-8"/>
-
-    <!-- member list -->
-    <div class="flex-1 flex flex-col text-center">
-        <p class="text-center font-semibold">Member list</p>
-        <div class="h-8"/>
-        {#if data.memberList.length > 0}
-        {#each data.memberList as member}
-        <div class={[
-            "flex flex-row align-middle justify-center",
-            member.was_paid ? "bg-[repeating-linear-gradient(45deg,var(--color-green-400)_0,var(--color-green-400)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed" : ""
-            ]}>
-            <User class="flex-1" username={member.name} image={member.image}/>
-            {#if member.id === data.owner.id}
-            <div class="flex-1 flex justify-center items-center text-center gap-3 py-3">
-                <small>(owner)</small>
-            </div>
-            {:else}
-            <div class="flex-1 flex justify-center items-center text-center gap-3 py-3">
-                {#if data.owner.id === data.user.id}
-                    <Button class="min-w-fit h-6 p-2">mark paid</Button>
-                {/if}
-            </div>
-            {/if}
-
-        </div>
-        {/each}
-        {:else}
-            No members.
-        {/if}
-        <div class="h-8"></div>
-        <div class="flex flex-row-reverse">
-            <Button
-                class="min-w-fit h-10 float-right p-2"
-                onclick={() => {
-                    sidebarHeading = "Add member";
-                    currentForm = userSearch;
-                    formSidebarOpen = true;
-                }}
-            >
-                Add member <Icon icon={faPlus} class="w-8 h-8"/>
-            </Button>
-        </div>
-
-    </div>
+	<!-- member list -->
+	<div class="flex flex-1 flex-col text-center">
+		<p class="text-center font-semibold">Member list</p>
+		<div class="h-8" />
+		{#each data.memberList as member}
+			<div
+				class={[
+					"flex flex-row justify-center align-middle",
+					member.was_paid
+						? "bg-[repeating-linear-gradient(45deg,var(--color-green-400)_0,var(--color-green-400)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
+						: ""
+				]}
+			>
+				<User class="flex-1" username={member.name} image={member.image} />
+				{#if member.id === data.owner.id}
+					<div class="flex flex-1 items-center justify-center gap-3 py-3 text-center">
+						<small>(owner)</small>
+					</div>
+				{:else}
+					<div class="flex flex-1 items-center justify-center gap-3 py-3 text-center">
+						{#if data.owner.id === data.user.id}
+							<!-- TODO: add onclick handlers (mark paid, remove from run) -->
+							<Button class="h-6 min-w-fit p-2"><Icon class="text-secondary-600 h-4 w-4" icon={faCheck}/></Button>
+							<Button class="h-6 min-w-fit p-2"><Icon class="text-secondary-600 h-4 w-4" icon={faXmark}/></Button>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		{:else}
+			No members.
+		{/each}
+		<div class="h-8"></div>
+		<div class="flex flex-row-reverse">
+			<Button
+				class="float-right h-10 min-w-fit p-2"
+				onclick={() => {
+					addMemberSidebarOpen = true;
+				}}
+			>
+				Add member <Icon icon={faPlus} class="h-8 w-8" />
+			</Button>
+		</div>
+	</div>
 </div>
 
 <div class="h-8"></div>
 
 <!-- cargo overview -->
-<div>
-
-</div>
+<div></div>
 
 <!-- refinery jobs -->
-<div>
-
-</div>
+<div></div>
 
 <!-- sales -->
-<div>
-
-</div>
+<div></div>
