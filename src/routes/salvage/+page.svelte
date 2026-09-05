@@ -5,10 +5,17 @@
     import Icon from "$lib/components/Icon.svelte";
     import {faPlus, faRocket} from "@fortawesome/free-solid-svg-icons";
     import {goto} from "$app/navigation";
+    import PageHeading from "$lib/components/PageHeading.svelte";
 
     let { data } = $props();
     let salvageRuns = $derived(getJoinedSalvageRuns().current);
 </script>
+
+
+<!-- headline -->
+<PageHeading>
+    Salvage runs
+</PageHeading>
 
 <div class="p-4">
     <table class={[
