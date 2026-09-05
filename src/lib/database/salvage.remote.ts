@@ -36,22 +36,7 @@ export const getJoinedSalvageRuns = query(async () =>
     `;
 });
 
-export const isOwner = query(
-    z.object({
-        salvage_run_id: z.number().int().positive(),
-        user_id: z.string()
-    }),
-    async ({ salvage_run_id, user_id }) =>
-    {
-        return await sql<boolean>`
-            SELECT (s.owner_id = '${user_id}')
-            FROM salvage_runs s
-            WHERE s.id = ${salvage_run_id};
-        `;
-    }
-);
-
-export const getSalvageRunOwnerInfo = query(
+export const getSalvageRunOwner = query(
     z.number().int().positive(),
     async (srid) =>
     {
@@ -94,8 +79,7 @@ export const getSalvageRunMemberList = query(
                 JOIN "user" u ON srm.user_id = u.id
                 JOIN salvage_runs s ON srm.salvage_run_id = s.id
             WHERE
-                srm.salvage_run_id = ${srid} -- and 
-                -- srm.user_id != s.owner_id
+                srm.salvage_run_id = ${srid}
         `;
     }
 );
@@ -104,11 +88,13 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
 
     let claims = await sql<{
         fees: number,
-        comment: string
+        ship: string,
+		system: string
     }[]>`
         SELECT
             fees,
-            comment
+            ship,
+            system
         FROM claim_fees
         WHERE salvage_run_id = ${srid}
     `;
