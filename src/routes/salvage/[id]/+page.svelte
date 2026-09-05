@@ -275,7 +275,7 @@
 				<th>Type</th>
 				<th>Amount</th>
 				<th>Location</th>
-				<th></th>
+				<th></th> <!-- actions -->
 			</tr>
 		</thead>
 		<tbody>
@@ -346,6 +346,7 @@
 				<th>Fees</th>
 				<th>Consumed cargo</th>
 				<th>Resulting cargo</th>
+				<th></th> <!-- actions -->
 			</tr>
 		</thead>
 	</table>
