@@ -147,7 +147,11 @@ CREATE TABLE cargo_event
 
     fees           INT,
 
-    price_per_unit INT
+    price_per_unit INT,
+
+    created_cargo_lot_id INT
+        REFERENCES "cargo_lot" (id)
+        DEFAULT (NULL)
 );
 
 CREATE TABLE cargo_lot
@@ -192,6 +196,9 @@ CREATE TABLE claim_fees (
         NOT NULL
         CHECK (fees >= 0),
 
-    comment TEXT
-        DEFAULT('--')
+    ship TEXT
+        NOT NULL,
+
+    system system_enum
+        NOT NULL
 );
