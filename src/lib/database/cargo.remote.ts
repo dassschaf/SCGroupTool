@@ -48,6 +48,7 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			consumed_cargo_type: string;
 			created_cargo_amount: number;
 			created_cargo_type: string;
+			created_cargo_id: number;
 		}[]
 	>`
 		SELECT
@@ -60,7 +61,8 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			SUM(cl_in.amount) as consumed_cargo_amount,
 			ct_in.name as consumed_cargo_type,
 			cl_out.amount as created_cargo_amount,
-			ct_out.name as created_cargo_type
+			ct_out.name as created_cargo_type,
+			ct_out.id as created_cargo_id
 		FROM cargo_event ce
 				 JOIN stations st ON ce.station_id = st.id
 				 LEFT JOIN cargo_lot cl_in on ce.id = cl_in.consumed_by_id
@@ -79,11 +81,10 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			station_name: string;
 			system_name: string;
 			created_at: Date;
-			finishes_at: Date;
 			fees: number;
 			price_per_unit: number;
-			consumed_cargo: number;
-
+			consumed_cargo_amount: number;
+			consumed_cargo_type: string;
 		}[]
 	>`
 		SELECT
@@ -91,11 +92,10 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			st.name as station_name,
 			st.system as system_name,
 			ce.created_at,
-			ce.finishes_at,
 			ce.fees,
 			ce.price_per_unit,
 			SUM(cl.amount) as consumed_cargo_amount,
-			ct.name as cargo_type
+			ct.name as consumed_cargo_type
 		FROM cargo_event ce
 				JOIN stations st ON ce.station_id = st.id
 			LEFT JOIN public.cargo_lot cl on ce.id = cl.consumed_by_id

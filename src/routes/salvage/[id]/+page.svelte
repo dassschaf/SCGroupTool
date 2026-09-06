@@ -18,7 +18,11 @@
 		getSalvageRunMemberList,
 		getSalvageRunOwner
 	} from "$lib/database/salvage.remote.ts";
-	import {getCargoLotsBySRID, getRefineryEventsBySRID, getSalesEventsBySRID} from "$lib/database/cargo.remote.ts";
+	import {
+		getCargoLotsBySRID,
+		getRefineryEventsBySRID,
+		getSalesEventsBySRID
+	} from "$lib/database/cargo.remote.ts";
 	import PageHeading from "$lib/components/PageHeading.svelte";
 
 	// properties
@@ -26,7 +30,15 @@
 
 	// sidebar states
 	let addMemberSidebarOpen = $state(false);
-	let anySidebarOpen = $derived(addMemberSidebarOpen);
+	let addCargoLotSidebarOpen = $state(false);
+	let addRefineryJobSidebarOpen = $state(false);
+	let addCargoSaleSidebarOpen = $state(false);
+	let anySidebarOpen = $derived(
+		addMemberSidebarOpen |
+			addCargoLotSidebarOpen |
+			addRefineryJobSidebarOpen |
+			addCargoSaleSidebarOpen
+	);
 
 	// search value states
 	let userSearchValue = $state("");
@@ -39,12 +51,16 @@
 	let refineryJobs = await getRefineryEventsBySRID(data.id);
 	let cargoSales = await getSalesEventsBySRID(data.id);
 
+	$inspect(refineryJobs);
 </script>
 
 <svelte:window
 	onkeydown={(e) => {
 		if (e.key === "Escape") {
 			addMemberSidebarOpen = false;
+			addCargoLotSidebarOpen = false;
+			addRefineryJobSidebarOpen = false;
+			addCargoSaleSidebarOpen = false;
 		}
 	}}
 />
@@ -57,6 +73,9 @@
 	]}
 	onclick={() => {
 		addMemberSidebarOpen = false;
+		addCargoLotSidebarOpen = false;
+		addRefineryJobSidebarOpen = false;
+		addCargoSaleSidebarOpen = false;
 	}}
 ></div>
 
@@ -86,6 +105,18 @@
 		{/each}
 	</div>
 </FormSidebar>
+
+<!-- add cargo lot sidebar -->
+<FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item"></FormSidebar>
+
+<!-- add refinery job sidebar -->
+<FormSidebar
+	bind:sidebarFlag={addRefineryJobSidebarOpen}
+	formHeading="Add refinery job"
+></FormSidebar>
+
+<!-- add cargo sale sidebar -->
+<FormSidebar bind:sidebarFlag={addCargoSaleSidebarOpen} formHeading="Add cargo sale"></FormSidebar>
 
 <!-- headline -->
 <PageHeading>
@@ -275,7 +306,8 @@
 				<th>Type</th>
 				<th>Amount</th>
 				<th>Location</th>
-				<th></th> <!-- actions -->
+				<th></th>
+				<!-- actions -->
 			</tr>
 		</thead>
 		<tbody>
@@ -288,20 +320,24 @@
 						<p>{cl.station_name}</p>
 						<small>{cl.system_name}</small>
 					</td>
-					<td class="flex w-30 flex-row">
-						<Button
-							class="m-4 h-6 min-w-fit p-2"
-							disabled={!cl.is_refinable || cl.is_consumed}>
-							Refine <Icon class="h-4 w-4" icon={faIndustry} />
-						</Button>
-						<Button
-							class="m-4 h-6 min-w-fit p-2"
-							disabled={!cl.is_commodity || cl.is_consumed}>
-							Sell <Icon class="h-4 w-4" icon={faMoneyBillWave} />
-						</Button>
-						<Button class="m-4 h-6 min-w-fit p-2" disabled={cl.is_consumed}>
-							Remove <Icon class="h-4 w-4" icon={faXmark} />
-						</Button>
+					<td class="w-72">
+						<div class="flex flex-row">
+							<Button
+								class="m-4 h-6 min-w-fit p-2"
+								disabled={!cl.is_refinable || cl.is_consumed}
+							>
+								Refine <Icon class="h-4 w-4" icon={faIndustry} />
+							</Button>
+							<Button
+								class="m-4 h-6 min-w-fit p-2"
+								disabled={!cl.is_commodity || cl.is_consumed}
+							>
+								Sell <Icon class="h-4 w-4" icon={faMoneyBillWave} />
+							</Button>
+							<Button class="m-4 h-6 min-w-fit p-2" disabled={cl.is_consumed}>
+								Remove <Icon class="h-4 w-4" icon={faXmark} />
+							</Button>
+						</div>
 					</td>
 				</tr>
 			{:else}
@@ -316,7 +352,7 @@
 		<Button
 			class="h-10 min-w-fit p-2"
 			onclick={() => {
-				addMemberSidebarOpen = true;
+				addCargoLotSidebarOpen = true;
 			}}
 		>
 			Add cargo item <Icon icon={faPlus} class="h-8 w-8" />
@@ -328,7 +364,7 @@
 <div class="m-4 rounded-md bg-gray-200 p-4">
 	<p class="text-center font-semibold">Refinery jobs</p>
 	<table
-			class={[
+		class={[
 			"w-full table-auto divide-y divide-gray-200",
 			"[&_th]:px-2 [&_th]:text-center [&_th]:text-xs [&_th]:font-semibold [&_th]:tracking-wide [&_th]:text-primary-600 [&_th]:uppercase",
 			"[&_thead_tr]:h-10",
@@ -344,15 +380,133 @@
 				<th>Start</th>
 				<th>End</th>
 				<th>Fees</th>
-				<th>Consumed cargo</th>
-				<th>Resulting cargo</th>
-				<th></th> <!-- actions -->
+				<th>Used cargo</th>
+				<th>Yield</th>
+				<th></th>
+				<!-- actions -->
 			</tr>
 		</thead>
+		<tbody>
+			{#each refineryJobs as rj, i (i)}
+				<tr>
+					<td>{rj.id}</td>
+					<td>
+						{rj.station_name}
+						<br />
+						<small>{rj.system_name}</small>
+					</td>
+					<td>{rj.created_at.toLocaleString("en-GB", { timeZone: "UTC" })}</td>
+					<td>{rj.finishes_at.toLocaleString("en-GB", { timeZone: "UTC" })}</td>
+					<td>{Intl.NumberFormat().format(rj.fees)} aUEC</td>
+					<td>
+						{rj.consumed_cargo_type}
+						<br />
+						<small>{Intl.NumberFormat().format(rj.consumed_cargo_amount)} SCU</small>
+					</td>
+					<td>
+						{rj.created_cargo_type}
+						<br />
+						<small
+							>{Intl.NumberFormat().format(rj.created_cargo_amount)} SCU, item #{rj.created_cargo_id}</small
+						>
+					</td>
+					<td class="w-32">
+						<Button class="m-4 h-6 min-w-fit p-2">
+							Remove <Icon class="h-4 w-4" icon={faXmark} />
+						</Button>
+					</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan="8">No refinery jobs yet.</td>
+				</tr>
+			{/each}
+		</tbody>
 	</table>
+
+	<div class="h-8"></div>
+	<div class="flex flex-row-reverse">
+		<Button
+			class="h-10 min-w-fit p-2"
+			onclick={() => {
+				addRefineryJobSidebarOpen = true;
+			}}
+		>
+			Add refinery job <Icon icon={faPlus} class="h-8 w-8" />
+		</Button>
+	</div>
 </div>
 
 <!-- sales -->
-<div>
+<div class="m-4 rounded-md bg-gray-200 p-4">
 	<p class="text-center font-semibold">Cargo sales</p>
+	<table
+		class={[
+			"w-full table-auto divide-y divide-gray-200",
+			"[&_th]:px-2 [&_th]:text-center [&_th]:text-xs [&_th]:font-semibold [&_th]:tracking-wide [&_th]:text-primary-600 [&_th]:uppercase",
+			"[&_thead_tr]:h-10",
+			"[&_tbody]:divide-y [&_tbody]:divide-gray-300",
+			"[&_tbody_tr]:h-10 [&_tbody_tr]:hover:bg-gray-300",
+			"[&_td]:px-2 [&_td]:text-center [&_td]:text-sm [&_td]:whitespace-nowrap"
+		]}
+	>
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Station</th>
+				<th>Date</th>
+				<th>Fees</th>
+				<th>Revenue</th>
+				<th>Cargo</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each cargoSales as cs, i (i)}
+				<tr>
+					<td>{cs.id}</td>
+					<td>
+						{cs.station_name}
+						<br />
+						<small>{cs.system_name}</small>
+					</td>
+					<td>
+						{cs.created_at.toLocaleString("en-GB", { timeZone: "UTC" })}
+					</td>
+					<td>
+						{Intl.NumberFormat().format(cs.fees)} aUEC
+					</td>
+					<td>
+						{Intl.NumberFormat().format(cs.consumed_cargo_amount * cs.price_per_unit)} aUEC
+					</td>
+					<td>
+						{cs.consumed_cargo_type}
+						<br />
+						<small>{cs.consumed_cargo_amount} SCU @ {Intl.NumberFormat().format(cs.price_per_unit)} aUEC</small>
+					</td>
+					<td class="w-32">
+						<Button class="m-4 h-6 min-w-fit p-2">
+							Remove <Icon class="h-4 w-4" icon={faXmark} />
+						</Button>
+					</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan="7">No cargo sales yet.</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+
+	<div class="h-8"></div>
+	<div class="flex flex-row-reverse">
+		<Button
+			class="h-10 min-w-fit p-2"
+			onclick={() => {
+				addCargoSaleSidebarOpen = true;
+			}}
+		>
+			Add cargo sale <Icon icon={faPlus} class="h-8 w-8" />
+		</Button>
+	</div>
 </div>
