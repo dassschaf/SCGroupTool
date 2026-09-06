@@ -184,7 +184,10 @@ export const addUserToSalvageRun = query(
         if (!locals.user) error(401, "Unauthorized: Not logged in.");
 
         if (await sql<string>`SELECT owner_id FROM salvage_runs WHERE id = ${salvage_run_id}` !== user_id)
-            error(401, "Unauthorized: You do not own the salvage run.")
+            error(401, "Unauthorized: You do not own the salvage run.");
+
+		if (await sql<number>`SELECT COUNT(*) FROM salvage_run_membership WHERE salvage_run_id = ${salvage_run_id} and user_id = ${user_id}` != 0)
+			return;
 
         return await sql<number>`
             INSERT INTO salvage_run_membership (salvage_run_id, user_id) 
