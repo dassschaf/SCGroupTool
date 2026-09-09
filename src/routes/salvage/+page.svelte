@@ -1,14 +1,12 @@
 <script lang="ts">
-	import { getJoinedSalvageRuns, createSalvageRun } from "$lib/database/salvage.remote.ts";
+	import { getJoinedSalvageRuns, createSalvageRun } from "$lib/database/salvage.remote";
 	import User from "$lib/components/User.svelte";
 	import Button from "$lib/components/Button.svelte";
 	import Icon from "$lib/components/Icon.svelte";
 	import { faPlus, faRocket } from "@fortawesome/free-solid-svg-icons";
-	import { goto } from "$app/navigation";
 	import PageHeading from "$lib/components/PageHeading.svelte";
-	import { resolve } from "$app/paths";
 
-	let salvageRuns = await getJoinedSalvageRuns();
+	let newestRunID = $derived((await getJoinedSalvageRuns()).findLast((e) => !e.is_finished).id);
 </script>
 
 <!-- headline -->
@@ -21,7 +19,7 @@
 			"[&_th]:px-2 [&_th]:text-center [&_th]:text-xs [&_th]:font-semibold [&_th]:tracking-wide [&_th]:text-primary-600 [&_th]:uppercase",
 			"[&_thead_tr]:h-10",
 			"[&_tbody]:divide-y [&_tbody]:divide-gray-200",
-			"[&_tbody_tr]:h-10 [&_tbody_tr]:hover:bg-gray-50",
+			"[&_tbody_tr]:h-10",
 			"[&_td]:px-2 [&_td]:text-center [&_td]:text-sm [&_td]:whitespace-nowrap"
 		]}
 	>
@@ -37,13 +35,16 @@
 		</thead>
 
 		<tbody>
-			{#each salvageRuns as sr (sr.id)}
+			{#each await getJoinedSalvageRuns() as sr (sr.id)}
 				<tr
 					class={[
 						sr.is_finished
 							? "bg-[repeating-linear-gradient(45deg,var(--color-secondary-200)_0,var(--color-secondary-200)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
-							: ""
-					]}
+							: "",
+						newestRunID === sr.id
+							? "bg-lime-100 hover:bg-lime-200"
+							: "hover:bg-gray-50"
+						]}
 				>
 					<td class="font-semibold">{sr.id}</td>
 					<td><User username={sr.owner_name} image={sr.owner_image} /></td>
@@ -52,13 +53,13 @@
 					<td>{Intl.NumberFormat().format(sr.profit ? sr.profit : 0)} aUEC</td>
 					<td>
 						{#if sr.is_finished}
-							<Button class="w-full" disabled
-								>Continue <Icon class="ml-3 h-8 w-8" icon={faRocket} /></Button
-							>
+							<Button class="w-full" disabled>
+								Continue <Icon class="ml-3 h-8 w-8" icon={faRocket} />
+							</Button>
 						{:else}
-							<Button class="w-full" href="/salvage/{sr.id}"
-								>Continue <Icon class="ml-3 h-8 w-8" icon={faRocket} /></Button
-							>
+							<Button class="w-full" href="/salvage/{sr.id}">
+								Continue <Icon class="ml-3 h-8 w-8" icon={faRocket} />
+							</Button>
 						{/if}
 					</td>
 				</tr>
@@ -74,13 +75,10 @@
 	<div class="h-8"></div>
 	<form {...createSalvageRun}>
 		<Button
-			data-sveltekit-preload-code="false"
-			data-sveltekit-preload-data="false"
+			data-sveltekit-preload-code="off"
+			data-sveltekit-preload-data="off"
 			class="float-right max-h-9 gap-3 rounded-full p-2"
-			onclick={async () => {
-				let id = await createSalvageRun();
-				await goto(resolve(`/salvage/${id}`));
-			}}
+			onclick={async () => { await getJoinedSalvageRuns().refresh() }}
 		>
 			<Icon class="h-8 w-8" icon={faPlus} />
 			Start new salvage run

@@ -170,6 +170,7 @@ export const createSalvageRun = form(async () => {
         VALUES (${result.id}, ${locals.user.id}); 
     `;
 
+	void getJoinedSalvageRuns().refresh();
     return result.id;
 });
 
