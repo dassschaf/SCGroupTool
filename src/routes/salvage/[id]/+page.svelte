@@ -14,6 +14,7 @@
 	import { searchUserByName } from "$lib/database/user.remote.ts";
 	import FormSidebar from "$lib/components/FormSidebar.svelte";
 	import {
+		addUserToSalvageRun,
 		getSalvageRunFinancialOverview,
 		getSalvageRunMemberList,
 		getSalvageRunOwner
@@ -24,6 +25,7 @@
 		getSalesEventsBySRID
 	} from "$lib/database/cargo.remote.ts";
 	import PageHeading from "$lib/components/PageHeading.svelte";
+	import {getCargoTypes, getStations} from "$lib/database/universe.remote.ts";
 
 	// properties
 	let { data }: PageProps = $props();
@@ -34,14 +36,17 @@
 	let addRefineryJobSidebarOpen = $state(false);
 	let addCargoSaleSidebarOpen = $state(false);
 	let anySidebarOpen = $derived(
-		addMemberSidebarOpen |
-			addCargoLotSidebarOpen |
-			addRefineryJobSidebarOpen |
+		addMemberSidebarOpen ||
+			addCargoLotSidebarOpen ||
+			addRefineryJobSidebarOpen ||
 			addCargoSaleSidebarOpen
 	);
 
-	// search value states
+	// form input values
 	let userSearchValue = $state("");
+	let clTypeSearchValue = $state("");
+	let clStationSearchValue = $state("");
+	let clAmountValue = $state("")
 
 	// database query results
 	let memberList = await getSalvageRunMemberList(data.id);
@@ -50,8 +55,10 @@
 	let cargoLots = await getCargoLotsBySRID(data.id);
 	let refineryJobs = await getRefineryEventsBySRID(data.id);
 	let cargoSales = await getSalesEventsBySRID(data.id);
+	let stations = await getStations();
+	let cargoTypes = await getCargoTypes();
 
-	$inspect(refineryJobs);
+	$inspect(stations.filter(st => { st.name.includes(clStationSearchValue) }));
 </script>
 
 <svelte:window
@@ -97,7 +104,13 @@
 	<!-- user list -->
 	<div class="flex justify-center align-middle">
 		{#each searchUserByName("%" + userSearchValue + "%").current as user (user.id)}
-			<Button class="h-12 min-w-fit p-4">
+			<Button
+				class="h-12 min-w-fit p-4"
+				onclick={async () => {
+					await addUserToSalvageRun({ salvage_run_id: data.id, user_id: user.id });
+					await memberList.refresh();
+				}}
+			>
 				<User class="flex-1" username={user.name} image={user.image} />
 			</Button>
 		{:else}
@@ -107,7 +120,60 @@
 </FormSidebar>
 
 <!-- add cargo lot sidebar -->
-<FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item"></FormSidebar>
+<FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item">
+	<div class="flex flex-row">
+		<div class="flex p-2 flex-col">
+			<small class="p-2">Cargo type</small>
+			<Input bind:value={clTypeSearchValue}
+				   autocomplete="off"
+				   autofocus
+				   class="w-full"
+				   placeholder="Search cargo types..."
+				   type="search"
+			/>
+
+		</div>
+
+		<div class="flex p-2 flex-col">
+			<small class="p-2">Station</small>
+			<Input bind:value={clStationSearchValue}
+				   autocomplete="off"
+				   autofocus
+				   class="w-full"
+				   placeholder="Search stations..."
+				   type="search"
+			/>
+			{#if clStationSearchValue.length > 2}
+			{#each stations.filter(st => { st.name.includes(clStationSearchValue) }) as st (st.id)}
+			<Button
+					class="m-4 h-6 min-w-fit p-2"
+					onclick={() => {
+
+					}}
+			>
+				{st.name}
+				<br>
+				<small>{st.system}</small>
+			</Button>
+			{/each}
+			{/if}
+
+		</div>
+
+		<div class="flex p-2 flex-col">
+			<small class="p-2">Amount</small>
+			<Input bind:value={clAmountValue}
+				   autocomplete="off"
+				   autofocus
+				   class="w-full"
+				   placeholder="Search cargo types..."
+				   type="number"
+			/>
+		</div>
+	</div>
+
+
+</FormSidebar>
 
 <!-- add refinery job sidebar -->
 <FormSidebar

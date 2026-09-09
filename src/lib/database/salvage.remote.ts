@@ -1,4 +1,4 @@
-import { getRequestEvent, query, command } from "$app/server";
+import { getRequestEvent, query, command, form } from "$app/server";
 import {sql} from 'bun';
 import * as z from 'zod';
 import {error} from "@sveltejs/kit";
@@ -151,12 +151,12 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
 
 
 // Create a salvage run as the current user, returning the ID of the new salvage run.
-export const createSalvageRun = command(async () => {
+export const createSalvageRun = form(async () => {
     const { locals } = getRequestEvent();
     if (!locals.user) error(401, "Unauthorized: You are not logged in.");
 
     // create salvage run
-    let result = (await sql<{
+    const result = (await sql<{
         id: number
     }[]>`
         INSERT INTO salvage_runs (owner_id)
@@ -165,7 +165,7 @@ export const createSalvageRun = command(async () => {
    `)[0];
 
     // add owner's membership to salvage run
-    let count = await sql<number>`
+    await sql`
         INSERT INTO salvage_run_membership (salvage_run_id, user_id) 
         VALUES (${result.id}, ${locals.user.id}); 
     `;

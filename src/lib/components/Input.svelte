@@ -45,6 +45,30 @@
     </label>
 {:else if restProps.type === 'checkbox'}
     <!-- TODO -->
+
+{:else if restProps.type === 'number'}
+    <label
+            class={[
+			'flex items-center gap-3 rounded-md border border-gray-300 px-3 transition-colors focus-within:border-primary-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary-600',
+			restProps['aria-invalid'] &&
+				'border-red-500 focus-within:border-red-500 focus-within:outline-red-500',
+			classValue
+		]}
+    >
+        {@render before?.()}
+
+        <input
+                bind:this={element}
+                bind:value
+                {...restProps}
+                class="h-9 w-full border-none bg-transparent text-sm outline-none placeholder:text-gray-400"
+                inputmode="numeric"
+                pattern="\d*"
+        />
+
+        {@render after?.()}
+    </label>
+
 {:else}
     <label
             class={[

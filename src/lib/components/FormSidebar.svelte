@@ -15,7 +15,7 @@
 
 <div
 	class={[
-		"main-background fixed inset-y-0 right-0 z-50 w-1/2 text-white transition-transform",
+		"main-background fixed inset-y-0 right-0 z-50 w-1/3 text-white transition-transform",
 		sidebarFlag ? "translate-x-0" : "translate-x-full"
 	]}
 >

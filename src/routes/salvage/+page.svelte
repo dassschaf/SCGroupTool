@@ -72,7 +72,7 @@
 
 	<!-- add button to open right side sidebar -->
 	<div class="h-8"></div>
-	<div>
+	<form {...createSalvageRun}>
 		<Button
 			data-sveltekit-preload-code="false"
 			data-sveltekit-preload-data="false"
@@ -85,5 +85,5 @@
 			<Icon class="h-8 w-8" icon={faPlus} />
 			Start new salvage run
 		</Button>
-	</div>
+	</form>
 </div>
