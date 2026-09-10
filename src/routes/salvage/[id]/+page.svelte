@@ -25,10 +25,15 @@
 		getSalesEventsBySRID
 	} from "$lib/database/cargo.remote.ts";
 	import PageHeading from "$lib/components/PageHeading.svelte";
-	import {getCargoTypes, getStations} from "$lib/database/universe.remote.ts";
+	import { getCargoTypes, getStations } from "$lib/database/universe.remote.ts";
+	import { error } from "@sveltejs/kit";
 
 	// properties
-	let { data }: PageProps = $props();
+	let { data, params }: PageProps = $props();
+	const srid = Number(params.id);
+
+	// validate srid
+	if (Number.isNaN(srid)) error(400, "Invalid salvage run ID.");
 
 	// sidebar states
 	let addMemberSidebarOpen = $state(false);
@@ -46,19 +51,13 @@
 	let userSearchValue = $state("");
 	let clTypeSearchValue = $state("");
 	let clStationSearchValue = $state("");
-	let clAmountValue = $state("")
+	let clAmountValue = $state("");
 
-	// database query results
-	let memberList = await getSalvageRunMemberList(data.id);
-	let owner = await getSalvageRunOwner(data.id);
-	let financialOverview = await getSalvageRunFinancialOverview(data.id);
-	let cargoLots = await getCargoLotsBySRID(data.id);
-	let refineryJobs = await getRefineryEventsBySRID(data.id);
-	let cargoSales = await getSalesEventsBySRID(data.id);
-	let stations = await getStations();
-	let cargoTypes = await getCargoTypes();
-
-	$inspect(stations.filter(st => { st.name.includes(clStationSearchValue) }));
+	$inspect(
+		(await getStations()).filter((st) => {
+			st.name.includes(clStationSearchValue);
+		})
+	);
 </script>
 
 <svelte:window
@@ -108,7 +107,7 @@
 				class="h-12 min-w-fit p-4"
 				onclick={async () => {
 					await addUserToSalvageRun({ salvage_run_id: data.id, user_id: user.id });
-					await memberList.refresh();
+					await getSalvageRunMemberList(data.id).refresh();
 				}}
 			>
 				<User class="flex-1" username={user.name} image={user.image} />
@@ -122,63 +121,57 @@
 <!-- add cargo lot sidebar -->
 <FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item">
 	<div class="flex flex-row">
-		<div class="flex p-2 flex-col">
+		<div class="flex flex-col p-2">
 			<small class="p-2">Cargo type</small>
-			<Input bind:value={clTypeSearchValue}
-				   autocomplete="off"
-				   autofocus
-				   class="w-full"
-				   placeholder="Search cargo types..."
-				   type="search"
+			<Input
+				bind:value={clTypeSearchValue}
+				autocomplete="off"
+				autofocus
+				class="w-full"
+				placeholder="Search cargo types..."
+				type="search"
 			/>
-
 		</div>
 
-		<div class="flex p-2 flex-col">
+		<div class="flex flex-col p-2">
 			<small class="p-2">Station</small>
-			<Input bind:value={clStationSearchValue}
-				   autocomplete="off"
-				   autofocus
-				   class="w-full"
-				   placeholder="Search stations..."
-				   type="search"
+			<Input
+				bind:value={clStationSearchValue}
+				autocomplete="off"
+				autofocus
+				class="w-full"
+				placeholder="Search stations..."
+				type="search"
 			/>
 			{#if clStationSearchValue.length > 2}
-			{#each stations.filter(st => { st.name.includes(clStationSearchValue) }) as st (st.id)}
-			<Button
-					class="m-4 h-6 min-w-fit p-2"
-					onclick={() => {
-
-					}}
-			>
-				{st.name}
-				<br>
-				<small>{st.system}</small>
-			</Button>
-			{/each}
+				{#each (await getStations()).filter((st) => {
+					st.name.includes(clStationSearchValue);
+				}) as st (st.id)}
+					<Button class="m-4 h-6 min-w-fit p-2" onclick={() => {}}>
+						{st.name}
+						<br />
+						<small>{st.system}</small>
+					</Button>
+				{/each}
 			{/if}
-
 		</div>
 
-		<div class="flex p-2 flex-col">
+		<div class="flex flex-col p-2">
 			<small class="p-2">Amount</small>
-			<Input bind:value={clAmountValue}
-				   autocomplete="off"
-				   autofocus
-				   class="w-full"
-				   placeholder="Search cargo types..."
-				   type="number"
+			<Input
+				bind:value={clAmountValue}
+				autocomplete="off"
+				autofocus
+				class="w-full"
+				placeholder="Search cargo types..."
+				type="number"
 			/>
 		</div>
 	</div>
-
-
 </FormSidebar>
 
 <!-- add refinery job sidebar -->
-<FormSidebar
-	bind:sidebarFlag={addRefineryJobSidebarOpen}
-	formHeading="Add refinery job"
+<FormSidebar bind:sidebarFlag={addRefineryJobSidebarOpen} formHeading="Add refinery job"
 ></FormSidebar>
 
 <!-- add cargo sale sidebar -->
@@ -209,16 +202,15 @@
 						<tr>
 							<th colspan="3" class="text-green-600">
 								Revenue: {Intl.NumberFormat().format(
-									financialOverview.sales_revenue.reduce(
-										(sum, sale) => (sum += sale.revenue),
-										0
-									)
+									(
+										await getSalvageRunFinancialOverview(data.id)
+									).sales_revenue.reduce((sum, sale) => (sum += sale.revenue), 0)
 								)} aUEC
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each financialOverview.sales_revenue as r, i (i)}
+						{#each (await getSalvageRunFinancialOverview(data.id)).sales_revenue as r, i (i)}
 							<tr>
 								<td class="text-right">{r.cargo_name}</td>
 								<td class="text-center">
@@ -254,20 +246,19 @@
 						<tr>
 							<th colspan="3" class="text-secondary-600">
 								Expenses: {Intl.NumberFormat().format(
-									financialOverview.claims.reduce(
+									(await getSalvageRunFinancialOverview(data.id)).claims.reduce(
 										(sum, claim) => (sum += claim.fees),
 										0
 									) +
-										financialOverview.event_fees.reduce(
-											(sum, event) => (sum += event.fees),
-											0
-										)
+										(
+											await getSalvageRunFinancialOverview(data.id)
+										).event_fees.reduce((sum, event) => (sum += event.fees), 0)
 								)} aUEC
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each financialOverview.claims as c, i (i)}
+						{#each (await getSalvageRunFinancialOverview(data.id)).claims as c, i (i)}
 							<tr>
 								<td class="text-right">Claim</td>
 								<td class="text-center">
@@ -280,7 +271,7 @@
 								</td>
 							</tr>
 						{/each}
-						{#each financialOverview.event_fees as e, i (i)}
+						{#each (await getSalvageRunFinancialOverview(data.id)).event_fees as e, i (i)}
 							<tr>
 								<td class="text-right">
 									{e.type === "SELL" ? "Sales fees" : "Refinery fees"}
@@ -295,7 +286,7 @@
 								</td>
 							</tr>
 						{/each}
-						{#if financialOverview.event_fees.length === 0 && financialOverview.claims.length === 0}
+						{#if (await getSalvageRunFinancialOverview(data.id)).event_fees.length === 0 && (await getSalvageRunFinancialOverview(data.id)).claims.length === 0}
 							<tr>
 								<td colspan="3">No expenses yet.</td>
 							</tr>
@@ -309,7 +300,7 @@
 	<!-- member list -->
 	<div class="m-4 flex-1 flex-col rounded-md bg-gray-200 p-4">
 		<p class="text-center font-semibold">Member list</p>
-		{#each memberList as member (member.id)}
+		{#each await getSalvageRunMemberList(data.id) as member (member.id)}
 			<div
 				class={[
 					"flex flex-row justify-center align-middle",
@@ -319,13 +310,13 @@
 				]}
 			>
 				<User class="flex-1" username={member.name} image={member.image} />
-				{#if member.id === owner.id}
+				{#if member.id === (await getSalvageRunOwner(data.id)).id}
 					<div class="flex flex-1 items-center justify-center gap-3 py-3 text-center">
 						<small>(owner)</small>
 					</div>
 				{:else}
 					<div class="flex flex-1 items-center justify-center gap-3 py-3 text-center">
-						{#if owner.id === user.id}
+						{#if (await getSalvageRunOwner(data.id)).id === data.user.id}
 							<!-- TODO: add onclick handlers (mark paid, remove from run) -->
 							<Button class="h-6 min-w-fit p-2"
 								><Icon class="h-4 w-4 text-secondary-600" icon={faCheck} /></Button
@@ -377,7 +368,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each cargoLots as cl (cl.id)}
+			{#each await getCargoLotsBySRID(data.id) as cl (cl.id)}
 				<tr>
 					<td>{cl.id}</td>
 					<td>{cl.cargo_name}</td>
@@ -453,7 +444,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each refineryJobs as rj, i (i)}
+			{#each await getRefineryEventsBySRID(data.id) as rj, i (i)}
 				<tr>
 					<td>{rj.id}</td>
 					<td>
@@ -528,7 +519,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each cargoSales as cs, i (i)}
+			{#each await getSalesEventsBySRID(data.id) as cs, i (i)}
 				<tr>
 					<td>{cs.id}</td>
 					<td>
@@ -548,7 +539,11 @@
 					<td>
 						{cs.consumed_cargo_type}
 						<br />
-						<small>{cs.consumed_cargo_amount} SCU @ {Intl.NumberFormat().format(cs.price_per_unit)} aUEC</small>
+						<small
+							>{cs.consumed_cargo_amount} SCU @ {Intl.NumberFormat().format(
+								cs.price_per_unit
+							)} aUEC</small
+						>
 					</td>
 					<td class="w-32">
 						<Button class="m-4 h-6 min-w-fit p-2">
