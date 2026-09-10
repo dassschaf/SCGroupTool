@@ -61,7 +61,8 @@
 			"fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden",
 			sidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
 		]}
-		 onclick="{() => (sidebarOpen = false)}"
+		onclick={() => (sidebarOpen = false)}
+		role="presentation"
 	 ></div>
 
 	<!-- sidebar -->
