@@ -190,9 +190,11 @@ export const addUserToSalvageRun = query(
 		if (await sql<number>`SELECT COUNT(*) FROM salvage_run_membership WHERE salvage_run_id = ${salvage_run_id} and user_id = ${user_id}` != 0)
 			return;
 
-        return await sql<number>`
+        await sql`
             INSERT INTO salvage_run_membership (salvage_run_id, user_id) 
             VALUES (${salvage_run_id}, '${user_id}');
         `;
+
+        await getSalvageRunMemberList(salvage_run_id).refresh();
     }
 );

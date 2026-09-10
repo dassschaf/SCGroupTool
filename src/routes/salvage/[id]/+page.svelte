@@ -52,12 +52,6 @@
 	let clTypeSearchValue = $state("");
 	let clStationSearchValue = $state("");
 	let clAmountValue = $state("");
-
-	$inspect(
-		(await getStations()).filter((st) => {
-			st.name.includes(clStationSearchValue);
-		})
-	);
 </script>
 
 <svelte:window
@@ -101,10 +95,13 @@
 	<div class="h-8"></div>
 
 	<!-- user list -->
-	<div class="flex justify-center align-middle">
+	<form class="flex justify-center align-middle" {...addUserToSalvageRun}>
+
 		{#each searchUserByName("%" + userSearchValue + "%").current as user (user.id)}
 			<Button
 				class="h-12 min-w-fit p-4"
+				{...addUserToSalvageRun.fields.salvage_run_id.as(srid)}
+				{...addUserToSalvageRun.fields.user_id.as(user.id)}
 				onclick={async () => {
 					await addUserToSalvageRun({ salvage_run_id: data.id, user_id: user.id });
 					await getSalvageRunMemberList(data.id).refresh();
@@ -115,12 +112,12 @@
 		{:else}
 			<p class="flex-auto text-center">Enter at least three characters.</p>
 		{/each}
-	</div>
+	</form>
 </FormSidebar>
 
 <!-- add cargo lot sidebar -->
 <FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item">
-	<div class="flex flex-row">
+	<form class="flex flex-row">
 		<div class="flex flex-col p-2">
 			<small class="p-2">Cargo type</small>
 			<Input
@@ -167,15 +164,18 @@
 				type="number"
 			/>
 		</div>
-	</div>
+	</form>
 </FormSidebar>
 
 <!-- add refinery job sidebar -->
-<FormSidebar bind:sidebarFlag={addRefineryJobSidebarOpen} formHeading="Add refinery job"
-></FormSidebar>
+<FormSidebar bind:sidebarFlag={addRefineryJobSidebarOpen} formHeading="Add refinery job">
+
+</FormSidebar>
 
 <!-- add cargo sale sidebar -->
-<FormSidebar bind:sidebarFlag={addCargoSaleSidebarOpen} formHeading="Add cargo sale"></FormSidebar>
+<FormSidebar bind:sidebarFlag={addCargoSaleSidebarOpen} formHeading="Add cargo sale">
+
+</FormSidebar>
 
 <!-- headline -->
 <PageHeading>
