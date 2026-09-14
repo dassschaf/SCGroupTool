@@ -175,7 +175,7 @@ export const createSalvageRun = form(async () => {
 });
 
 // Add another user to the salvage run
-export const addUserToSalvageRun = query(
+export const addUserToSalvageRun = form(
     z.object({
         salvage_run_id: z.number().int().positive(),
         user_id: z.string()
@@ -184,15 +184,19 @@ export const addUserToSalvageRun = query(
         const { locals } = getRequestEvent();
         if (!locals.user) error(401, "Unauthorized: Not logged in.");
 
-        if (await sql<string>`SELECT owner_id FROM salvage_runs WHERE id = ${salvage_run_id}` !== user_id)
+		const owner = (await sql<{
+			owner_id: string
+		}[]>`SELECT owner_id FROM salvage_runs WHERE id = ${salvage_run_id}`)[0].owner_id;
+        if (owner !== locals.user.id)
             error(401, "Unauthorized: You do not own the salvage run.");
 
-		if (await sql<number>`SELECT COUNT(*) FROM salvage_run_membership WHERE salvage_run_id = ${salvage_run_id} and user_id = ${user_id}` != 0)
+		const qrs = await sql<{ count: number }[]>`SELECT COUNT(*) FROM salvage_run_membership WHERE salvage_run_id = ${salvage_run_id} and user_id = ${user_id}`;
+		if (qrs[0].count > 0)
 			return;
 
         await sql`
             INSERT INTO salvage_run_membership (salvage_run_id, user_id) 
-            VALUES (${salvage_run_id}, '${user_id}');
+            VALUES (${salvage_run_id}, ${user_id});
         `;
 
         await getSalvageRunMemberList(salvage_run_id).refresh();
