@@ -46,6 +46,12 @@
 			addRefineryJobSidebarOpen ||
 			addCargoSaleSidebarOpen
 	);
+	let closeSidebars = (e: MouseEvent) => {
+		addMemberSidebarOpen = false;
+		addCargoLotSidebarOpen = false;
+		addRefineryJobSidebarOpen = false;
+		addCargoSaleSidebarOpen = false;
+	}
 
 	// form input values
 	let userSearchValue = $state("");
@@ -56,12 +62,8 @@
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === "Escape") {
-			addMemberSidebarOpen = false;
-			addCargoLotSidebarOpen = false;
-			addRefineryJobSidebarOpen = false;
-			addCargoSaleSidebarOpen = false;
-		}
+		if (e.key === "Escape")
+			closeSidebars();
 	}}
 />
 
@@ -71,12 +73,7 @@
 		"fixed inset-0 z-50 bg-black/50 transition-opacity",
 		anySidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
 	]}
-	onclick={() => {
-		addMemberSidebarOpen = false;
-		addCargoLotSidebarOpen = false;
-		addRefineryJobSidebarOpen = false;
-		addCargoSaleSidebarOpen = false;
-	}}
+	onclick={closeSidebars()}
 ></div>
 
 <!-- add member sidebar -->
@@ -96,16 +93,13 @@
 
 	<!-- user list -->
 	<form class="flex justify-center align-middle" {...addUserToSalvageRun}>
+		<input {...addUserToSalvageRun.fields.salvage_run_id.as("hidden", srid)}/>
 
 		{#each searchUserByName("%" + userSearchValue + "%").current as user (user.id)}
 			<Button
 				class="h-12 min-w-fit p-4"
-				{...addUserToSalvageRun.fields.salvage_run_id.as(srid)}
-				{...addUserToSalvageRun.fields.user_id.as(user.id)}
-				onclick={async () => {
-					await addUserToSalvageRun({ salvage_run_id: data.id, user_id: user.id });
-					await getSalvageRunMemberList(data.id).refresh();
-				}}
+				{...addUserToSalvageRun.fields.user_id.as("submit", user.id)}
+				onclick={closeSidebars}
 			>
 				<User class="flex-1" username={user.name} image={user.image} />
 			</Button>
@@ -141,10 +135,10 @@
 				type="search"
 			/>
 			{#if clStationSearchValue.length > 2}
-				{#each (await getStations()).filter((st) => {
-					st.name.includes(clStationSearchValue);
-				}) as st (st.id)}
-					<Button class="m-4 h-6 min-w-fit p-2" onclick={() => {}}>
+				{#each (await getStations()).filter((st) =>
+					st.name.includes(clStationSearchValue)
+				) as st (st.id)}
+					<Button class="m-4 h-8 min-w-fit p-2" onclick={() => {}}>
 						{st.name}
 						<br />
 						<small>{st.system}</small>
@@ -185,7 +179,7 @@
 <div class="flex flex-row">
 	<!-- owner & financial info -->
 	<div class="m-4 flex-3 flex-col rounded-md bg-gray-200 p-4">
-		<p class="text-center font-semibold">Financial overview</p>
+		<p class="text-center font-semibold">Financial overview: {Intl.NumberFormat().format((await getSalvageRunFinancialOverview(data.id)).profit)} aUEC</p>
 		<div class="flex flex-row">
 			<div class="flex-1">
 				<table
