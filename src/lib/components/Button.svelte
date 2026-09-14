@@ -20,7 +20,9 @@
     <a {...restProps} class={[
         baseClasses,
         classValue,
-        "hover:bg-secondary-600 hover:text-white transition-colours duration-200"
+        restProps.disabled
+        ? "pointer-events-none" // true
+        : "hover:bg-secondary-600 hover:text-white transition-colours duration-200" // false
         ]}>
         {@render children?.()}
     </a>
@@ -29,7 +31,7 @@
         baseClasses,
         classValue,
         restProps.disabled
-        ? "" // true
+        ? "pointer-events-none" // true
         : "hover:bg-secondary-600 hover:text-white transition-colours duration-200" // false
     ]}>
         {@render children?.()}
