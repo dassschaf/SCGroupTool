@@ -40,7 +40,10 @@ export const getSalvageRunOwner = query(
     z.number().int().positive(),
     async (srid) =>
     {
-        let result = await sql<{
+        const { locals } = getRequestEvent();
+		if (!locals.user) error(401, "Unauthorized");
+
+        const result = await sql<{
             name: string,
             image: string,
             id: string
@@ -63,6 +66,9 @@ export const getSalvageRunOwner = query(
 export const getSalvageRunMemberList = query(
     z.number().int().positive(),
     async (srid) => {
+        const { locals } = getRequestEvent();
+		if (!locals.user) error(401, "Unauthorized");
+
         return await sql<{
             name: string,
             image: string,
@@ -84,9 +90,27 @@ export const getSalvageRunMemberList = query(
     }
 );
 
-export const getSalvageRunFinancialOverview = query(z.number().int().positive(), async (srid) => {
+export const isSalvageRunMember = query(z.object({
+    srid: z.number().int().positive(),
+    user_id: z.string()
+}), async ({ srid, user_id }) =>
+{
+    const memberList = await getSalvageRunMemberList(srid);
+    for (const member of memberList) {
+           if (user_id === member.id)
+               return true;
+    }
 
-    let claims = await sql<{
+    return false;
+});
+
+export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
+    async (srid) => {
+
+    const { locals } = getRequestEvent();
+	if (!locals.user) error(401, "Unauthorized");
+
+    const claims = await sql<{
         fees: number,
         ship: string,
 		system: string
@@ -99,7 +123,7 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
         WHERE salvage_run_id = ${srid}
     `;
 
-    let event_fees = await sql<{
+    const event_fees = await sql<{
         fees: number,
         type: string,
         station_name: string,
@@ -116,7 +140,7 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
             ce.salvage_run_id = ${srid}
     `;
 
-    let sales_revenue = await sql<{
+    const sales_revenue = await sql<{
         revenue: number,
         cargo_name: string,
         station_name: string,
