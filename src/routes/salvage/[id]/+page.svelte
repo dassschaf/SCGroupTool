@@ -20,6 +20,7 @@
 		getSalvageRunOwner
 	} from "$lib/database/salvage.remote.ts";
 	import {
+		addCargoLot,
 		getCargoLotsBySRID,
 		getRefineryEventsBySRID,
 		getSalesEventsBySRID
@@ -56,8 +57,10 @@
 	// form input values
 	let userSearchValue = $state("");
 	let clTypeSearchValue = $state("");
+	let clTypeSearchId = $state(-1)
 	let clStationSearchValue = $state("");
-	let clAmountValue = $state("");
+	let clStationSearchId = $state(-1);
+	let clAmountValue = $state(0);
 </script>
 
 <svelte:window
@@ -111,34 +114,50 @@
 
 <!-- add cargo lot sidebar -->
 <FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item">
-	<form class="flex flex-row">
+	<div class="flex flex-row flex-1">
 		<div class="flex flex-col p-2">
 			<small class="p-2">Cargo type</small>
 			<Input
 				bind:value={clTypeSearchValue}
 				autocomplete="off"
 				autofocus
-				class="w-full"
+				class="w-full mb-2"
 				placeholder="Search cargo types..."
 				type="search"
 			/>
+			{#if clTypeSearchValue.length > 2}
+				{#each (await getCargoTypes()).filter(ct =>
+					ct.name.toLowerCase().includes(clTypeSearchValue.toLowerCase())
+				) as ct (ct.id)}
+					<Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
+						clTypeSearchId = ct.id;
+						clTypeSearchValue = ""; // reset search
+					}}>
+						{ct.name}
+					</Button>
+				{/each}
+			{/if}
 		</div>
 
 		<div class="flex flex-col p-2">
 			<small class="p-2">Station</small>
 			<Input
+				id="clStationSearch"
 				bind:value={clStationSearchValue}
 				autocomplete="off"
 				autofocus
-				class="w-full"
+				class="w-full mb-2"
 				placeholder="Search stations..."
 				type="search"
 			/>
 			{#if clStationSearchValue.length > 2}
 				{#each (await getStations()).filter((st) =>
-					st.name.includes(clStationSearchValue)
+					st.name.toLowerCase().includes(clStationSearchValue.toLowerCase())
 				) as st (st.id)}
-					<Button class="m-4 h-8 min-w-fit p-2" onclick={() => {}}>
+					<Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
+						clStationSearchId = st.id;
+						clStationSearchValue = ""; // reset search
+					}}>
 						{st.name}
 						<br />
 						<small>{st.system}</small>
@@ -153,10 +172,39 @@
 				bind:value={clAmountValue}
 				autocomplete="off"
 				autofocus
-				class="w-full"
+				class="w-full mb-2"
 				placeholder="Search cargo types..."
 				type="number"
 			/>
+		</div>
+	</div>
+	<!-- form is separate to not have buttons be submit -->
+	<form class="flex flex-col p-4" {...addCargoLot}>
+		<div class="flex flex-row">
+			<div class="flex-1 p-2">
+				<small>Selected cargo:</small>
+				<p>{clTypeSearchId !== -1 ? (await getCargoTypes()).find(e => e.id === clTypeSearchId).name : "—"}</p>
+				<input {...addCargoLot.fields.cargo_type.as("hidden", clTypeSearchId)}/>
+			</div>
+			<div class="flex-1 p-2">
+				<small>Selected station:</small>
+				<p>{clStationSearchId !== -1 ? (await getStations()).find(s => s.id === clStationSearchId).name : "—"}</p>
+				<input {...addCargoLot.fields.station.as("hidden", clStationSearchId)}/>
+			</div>
+			<div class="flex-1 p-2">
+				<small>Amount:</small>
+				<p>{clAmountValue > 0 ? `${clAmountValue} SCU` : "—"}</p>
+				<input {...addCargoLot.fields.amount.as("hidden", clAmountValue)}/>
+			</div>
+		</div>
+		<div class="h-2"></div>
+		<div class="flex flex-row-reverse">
+			<Button
+					class="h-12 min-w-fit p-4"
+					{...addCargoLot.fields.srid.as("submit", srid)}
+			>
+				Add cargo lot
+			</Button>
 		</div>
 	</form>
 </FormSidebar>
