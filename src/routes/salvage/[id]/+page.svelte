@@ -3,15 +3,16 @@
 	import User from "$lib/components/User.svelte";
 	import Icon from "$lib/components/Icon.svelte";
 	import {
-		faCheck,
 		faIndustry,
 		faMoneyBillWave,
 		faPlus,
-		faXmark
+		faXmark,
+		faMoneyBillTransfer,
+		faUserMinus
 	} from "@fortawesome/free-solid-svg-icons";
 	import Button from "$lib/components/Button.svelte";
 	import Input from "$lib/components/Input.svelte";
-	import { searchUserByName } from "$lib/database/user.remote.ts";
+	import { searchUserByName } from "$lib/database/user.remote";
 	import FormSidebar from "$lib/components/FormSidebar.svelte";
 	import {
 		addUserToSalvageRun,
@@ -211,7 +212,7 @@
 
 <!-- add refinery job sidebar -->
 <FormSidebar bind:sidebarFlag={addRefineryJobSidebarOpen} formHeading="Add refinery job">
-
+	
 </FormSidebar>
 
 <!-- add cargo sale sidebar -->
@@ -266,7 +267,7 @@
 							</tr>
 						{:else}
 							<tr>
-								<td colspan="3">No sales yet.</td>
+								<td colspan="3">No revenue yet.</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -361,10 +362,10 @@
 						{#if (await getSalvageRunOwner(data.id)).id === data.user.id}
 							<!-- TODO: add onclick handlers (mark paid, remove from run) -->
 							<Button class="h-6 min-w-fit p-2"
-								><Icon class="h-4 w-4 text-secondary-600" icon={faCheck} /></Button
+								><Icon class="h-4 w-4 text-secondary-600" icon={faMoneyBillTransfer} /></Button
 							>
 							<Button class="h-6 min-w-fit p-2"
-								><Icon class="h-4 w-4 text-secondary-600" icon={faXmark} /></Button
+								><Icon class="h-4 w-4 text-secondary-600" icon={faUserMinus} /></Button
 							>
 						{/if}
 					</div>
@@ -395,7 +396,7 @@
 			"[&_th]:px-2 [&_th]:text-center [&_th]:text-xs [&_th]:font-semibold [&_th]:tracking-wide [&_th]:text-primary-600 [&_th]:uppercase",
 			"[&_thead_tr]:h-10",
 			"[&_tbody]:divide-y [&_tbody]:divide-gray-300",
-			"[&_tbody_tr]:h-10 [&_tbody_tr]:hover:bg-gray-300",
+			"[&_tbody_tr]:h-10",
 			"[&_td]:px-2 [&_td]:text-center [&_td]:text-sm [&_td]:whitespace-nowrap"
 		]}
 	>
@@ -411,7 +412,10 @@
 		</thead>
 		<tbody>
 			{#each await getCargoLotsBySRID(data.id) as cl (cl.id)}
-				<tr>
+				<tr class={[
+						cl.is_consumed ?
+						"bg-[repeating-linear-gradient(45deg,var(--color-secondary-200)_0,var(--color-secondary-200)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed" :
+						"hover:bg-gray-300"]}>
 					<td>{cl.id}</td>
 					<td>{cl.cargo_name}</td>
 					<td>{cl.amount} SCU</td>
@@ -450,11 +454,9 @@
 	<div class="flex flex-row-reverse">
 		<Button
 			class="h-10 min-w-fit p-2"
-			onclick={() => {
-				addCargoLotSidebarOpen = true;
-			}}
+			href="/salvage/{srid}/addCargo"
 		>
-			Add cargo item <Icon icon={faPlus} class="h-8 w-8" />
+			Add cargo lot <Icon icon={faPlus} class="h-8 w-8" />
 		</Button>
 	</div>
 </div>

@@ -2,15 +2,14 @@ import { getRequestEvent, query, form } from "$app/server";
 import { sql } from "bun";
 import * as z from "zod";
 import { error } from "@sveltejs/kit";
-import { isSalvageRunMember } from "$lib/database/salvage.remote.ts";
+import { isSalvageRunMember } from "$lib/database/salvage.remote";
 
-export const getCargoLotsBySRID = query(z.number().int().positive(),
-	async (srid) => {
+export const getCargoLotsBySRID = query(z.number().int().positive(), async (srid) => {
 	const { locals } = getRequestEvent();
 	if (!locals.user) error(401, "Unauthorized");
 
 	// check whether the user submitting the request is a member of the salvage run
-	if (!await isSalvageRunMember({ srid: srid, user_id: locals.user.id }))
+	if (!(await isSalvageRunMember({ srid: srid, user_id: locals.user.id })))
 		error(401, "You are no member of this salvage run (#" + srid + ")!");
 
 	return sql<
@@ -24,6 +23,7 @@ export const getCargoLotsBySRID = query(z.number().int().positive(),
 			system_name: string;
 			consumed_by_id: number;
 			is_consumed: boolean;
+			added_by: string;
 		}[]
 	>`
 		SELECT 
@@ -35,6 +35,7 @@ export const getCargoLotsBySRID = query(z.number().int().positive(),
 			st.name as station_name,
 			st.system as system_name,
 			cl.consumed_by_id,
+			cl.added_by,
 			(cl.consumed_by_id is not null) as is_consumed
 		FROM cargo_lot cl
 			JOIN cargo_types ct ON cl.cargo_type_id = ct.id
@@ -49,7 +50,7 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 	if (!locals.user) error(401, "Unauthorized");
 
 	// check whether the user submitting the request is a member of the salvage run
-	if (!await isSalvageRunMember({ srid: srid, user_id: locals.user.id }))
+	if (!(await isSalvageRunMember({ srid: srid, user_id: locals.user.id })))
 		error(401, "You are no member of this salvage run (#" + srid + ")!");
 
 	return sql<
@@ -65,6 +66,7 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			created_cargo_amount: number;
 			created_cargo_type: string;
 			created_cargo_id: number;
+			added_by: string;
 		}[]
 	>`
 		SELECT
@@ -74,6 +76,7 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			ce.created_at,
 			ce.finishes_at,
 			ce.fees,
+			ce.added_by,
 			SUM(cl_in.amount) as consumed_cargo_amount,
 			ct_in.name as consumed_cargo_type,
 			cl_out.amount as created_cargo_amount,
@@ -108,6 +111,7 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			price_per_unit: number;
 			consumed_cargo_amount: number;
 			consumed_cargo_type: string;
+			added_by: string;
 		}[]
 	>`
 		SELECT
@@ -117,6 +121,7 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			ce.created_at,
 			ce.fees,
 			ce.price_per_unit,
+			ce.added_by,
 			SUM(cl.amount) as consumed_cargo_amount,
 			ct.name as consumed_cargo_type
 		FROM cargo_event ce
@@ -128,23 +133,127 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 	`;
 });
 
-export const addCargoLot = form(z.object({
-	cargo_type: z.number().int().positive(),
-	station: z.number().int().positive(),
-	amount: z.number().int().positive(),
-	srid: z.number().int().positive()
-}), async ({ cargo_type, station, amount, srid }) =>
-{
-	const { locals } = getRequestEvent();
-	if (!locals.user) error(401, 'Unauthorized');
+export const addCargoLot = form(
+	z.object({
+		cargo_type: z.number().int().positive(),
+		station: z.number().int().positive(),
+		amount: z.number().int().positive(),
+		srid: z.number().int().positive()
+	}),
+	async ({ cargo_type, station, amount, srid }) => {
+		const { locals } = getRequestEvent();
+		if (!locals.user) error(401, "Unauthorized");
 
-	// check whether the user submitting the request is a member of the salvage run
-	if (!await isSalvageRunMember({ srid: srid, user_id: locals.user.id }))
-		error(401, "You are no member of this salvage run (#" + srid + ")!");
+		// check whether the user submitting the request is a member of the salvage run
+		if (!(await isSalvageRunMember({ srid: srid, user_id: locals.user.id })))
+			error(401, "You are no member of this salvage run (#" + srid + ")!");
 
-	// insert new record
-	return sql`
-		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, consumed_by_id)
-		VALUES (${cargo_type}, ${srid}, ${station}, ${amount}, NULL)
+		// insert new record
+		return sql`
+		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, consumed_by_id, added_by)
+		VALUES (${cargo_type}, ${srid}, ${station}, ${amount}, NULL, ${locals.user.id})
 	`;
-})
+	}
+);
+
+export const addRefineryEvent = form(
+	z.object({
+		consumed_ids: z.array(z.number().int().positive()),
+		cargo_yield: z.number().int().positive(),
+		cargo_type: z.number().int().positive(),
+		station: z.number().int().positive(),
+		srid: z.number().int().positive(),
+		end_time_iso: z.iso.datetime(),
+		fees: z.number().int().positive()
+	}),
+	async ({ consumed_ids, cargo_yield, cargo_type, station, srid, end_time_iso, fees }) => {
+		// check if the user is logged in
+		const { locals } = getRequestEvent();
+		if (!locals.user) error(401, "Unauthorized");
+		const user_id = locals.user.id;
+
+		// check whether the user submitting the request is a member of the salvage run
+		if (!(await isSalvageRunMember({ srid: srid, user_id: locals.user.id })))
+			error(401, "You are no member of this salvage run (#" + srid + ")!");
+
+		// get the start/end times
+		const start_time = new Date(Date.now());
+		const end_time = new Date(end_time_iso);
+
+		// create resulting cargo lot
+		const lot_id = (
+			await sql<
+				{
+					id: number;
+				}[]
+			>`
+		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, consumed_by_id, added_by) 
+		VALUES (${cargo_type}, ${srid}, ${station}, ${cargo_yield}, NULL, ${user_id})
+		RETURNING id
+	`
+		)[0].id;
+
+		// create refinery event
+		const event_id = (
+			await sql<
+				{
+					id: number;
+				}[]
+			>`
+		INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, finishes_at, fees, price_per_unit, added_by, created_cargo_lot_id)
+		VALUES (${srid}, ${station}, 'REFINE', ${start_time}, ${end_time}, ${fees}, 0, ${user_id}, ${lot_id})
+		RETURNING id
+	`
+		)[0].id;
+
+		// update consumed ids
+		await sql`
+			UPDATE cargo_lot
+			SET consumed_by_id = ${event_id}
+			WHERE id in (${consumed_ids})
+		`;
+	}
+);
+
+export const addSellEvent = form(
+	z.object({
+		consumed_ids: z.array(z.number().int().positive()),
+		price_per_unit: z.number().int().positive(),
+		fees: z.number().int().positive(),
+		station: z.number().int().positive(),
+		srid: z.number().int().positive()
+	}),
+	async ({ consumed_ids, price_per_unit, fees, station, srid }) => {
+		// check if the user is logged in
+		const { locals } = getRequestEvent();
+		if (!locals.user) error(401, "Unauthorized");
+		const user_id = locals.user.id;
+
+		// check whether the user submitting the request is a member of the salvage run
+		if (!(await isSalvageRunMember({ srid: srid, user_id: locals.user.id })))
+			error(401, "You are no member of this salvage run (#" + srid + ")!");
+
+		// record current time for the sale event
+		const current_time = new Date(Date.now());
+
+		// create sell event
+		const event_id = (
+			await sql<
+				{
+					id: number;
+				}[]
+			>`
+			INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, fees, price_per_unit, added_by) 
+			VALUES (${srid}, ${station}, 'SELL', ${current_time}, ${fees}, ${price_per_unit}, ${user_id})
+			RETURNING id
+		`
+		)[0].id;
+
+		// update consumed ids
+		await sql`
+			UPDATE cargo_lot
+			SET consumed_by_id = ${event_id}
+			WHERE id in (${consumed_ids})
+		`;
+	}
+);

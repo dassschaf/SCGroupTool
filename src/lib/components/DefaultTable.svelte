@@ -2,7 +2,7 @@
     import type { ClassValue, HTMLBaseAttributes } from 'svelte/elements';
 
     let {
-        class: classValue
+        class: classValue,
         children
     }: {
         class?: ClassValue

@@ -12,9 +12,10 @@
 <!-- headline -->
 <PageHeading>Salvage runs</PageHeading>
 
-<div class="p-4">
-	<table
-		class={[
+<div class="p-4 flex flex-col h-full">
+	<div class="flex-1">
+		<table
+				class={[
 			"w-full table-auto divide-y divide-gray-200",
 			"[&_th]:px-2 [&_th]:text-center [&_th]:text-xs [&_th]:font-semibold [&_th]:tracking-wide [&_th]:text-primary-600 [&_th]:uppercase",
 			"[&_thead_tr]:h-10",
@@ -22,8 +23,8 @@
 			"[&_tbody_tr]:h-10",
 			"[&_td]:px-2 [&_td]:text-center [&_td]:text-sm [&_td]:whitespace-nowrap"
 		]}
-	>
-		<thead>
+		>
+			<thead>
 			<tr>
 				<th>#</th>
 				<th>Owner</th>
@@ -32,12 +33,12 @@
 				<th>Current profits</th>
 				<th><!-- empty => select button --></th>
 			</tr>
-		</thead>
+			</thead>
 
-		<tbody>
+			<tbody>
 			{#each await getJoinedSalvageRuns() as sr (sr.id)}
 				<tr
-					class={[
+						class={[
 						sr.is_finished
 							? "bg-[repeating-linear-gradient(45deg,var(--color-secondary-200)_0,var(--color-secondary-200)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
 							: "",
@@ -62,26 +63,29 @@
 							</Button>
 						{/if}
 					</td>
+					<td><!-- dummy --></td>
 				</tr>
 			{:else}
 				<tr>
 					<td colspan="6"> You're not part of any salvage runs (yet). </td>
 				</tr>
 			{/each}
-		</tbody>
-	</table>
+			</tbody>
+		</table>
+	</div>
 
 	<!-- add button to open right side sidebar -->
-	<div class="h-8"></div>
-	<form {...createSalvageRun}>
-		<Button
-			data-sveltekit-preload-code="off"
-			data-sveltekit-preload-data="off"
-			class="float-right max-h-9 gap-3 rounded-full p-2"
-			onclick={async () => { await getJoinedSalvageRuns().refresh() }}
-		>
-			<Icon class="h-8 w-8" icon={faPlus} />
-			Start new salvage run
-		</Button>
-	</form>
+	<div class="self-end-safe">
+		<form {...createSalvageRun}>
+			<Button
+					data-sveltekit-preload-code="off"
+					data-sveltekit-preload-data="off"
+					class="float-right gap-3 rounded-full p-2"
+					onclick={async () => { await getJoinedSalvageRuns().refresh() }}
+			>
+				<Icon class="h-8 w-8" icon={faPlus} />
+				Start new salvage run
+			</Button>
+		</form>
+	</div>
 </div>

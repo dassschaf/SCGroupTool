@@ -22,7 +22,7 @@
         classValue,
         restProps.disabled
         ? "pointer-events-none" // true
-        : "hover:bg-secondary-600 hover:text-white transition-colours duration-200" // false
+        : "hover:bg-secondary-600 hover:text-white transition-colours duration-200 outline outline-secondary-600" // false
         ]}>
         {@render children?.()}
     </a>
@@ -32,7 +32,7 @@
         classValue,
         restProps.disabled
         ? "pointer-events-none" // true
-        : "hover:bg-secondary-600 hover:text-white transition-colours duration-200" // false
+        : "hover:bg-secondary-600 hover:text-white transition-colours duration-200 outline outline-secondary-600" // false
     ]}>
         {@render children?.()}
     </button>

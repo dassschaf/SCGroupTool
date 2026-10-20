@@ -151,7 +151,11 @@ CREATE TABLE cargo_event
 
     created_cargo_lot_id INT
         REFERENCES "cargo_lot" (id)
-        DEFAULT (NULL)
+        DEFAULT (NULL),
+
+    added_by       TEXT
+        REFERENCES "user" (id)
+        ON DELETE SET NULL
 );
 
 CREATE TABLE cargo_lot
@@ -180,7 +184,11 @@ CREATE TABLE cargo_lot
     -- reference to event iff. consumed
     consumed_by_id INT
         REFERENCES "cargo_event" (id) ON DELETE CASCADE
-        DEFAULT (NULL)
+        DEFAULT (NULL),
+
+    added_by       TEXT
+        REFERENCES "user" (id)
+        ON DELETE SET NULL
 );
 
 CREATE TABLE claim_fees (
@@ -200,5 +208,9 @@ CREATE TABLE claim_fees (
         NOT NULL,
 
     system system_enum
-        NOT NULL
+        NOT NULL,
+
+    added_by        TEXT
+        REFERENCES "user" (id)
+            ON DELETE SET NULL
 );
