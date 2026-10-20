@@ -116,7 +116,7 @@
 	<main class="min-w-0 lg:ml-72">
 		<header class="flex h-16 items-center px-4 shadow-sm lg:hidden">
 			<button aria-label="Open sidebar" class="rounded-md p-2" onclick="{() => (sidebarOpen = true)}">
-				<Icon class="h-5 w-5 text-primary-600" icon="{faBars}"/>
+				<Icon class="h-5 w-5 text-primary-600" icon={faBars}/>
 			</button>
 		</header>
 
