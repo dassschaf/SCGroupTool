@@ -34,14 +34,16 @@ export const getCargoLotsBySRID = query(z.number().int().positive(), async (srid
 			ct.is_refinable,
 			st.name as station_name,
 			st.system as system_name,
-			cl.consumed_by_id,
+			cle.event_id,
 			cl.added_by,
-			(cl.consumed_by_id is not null) as is_consumed
+			(cle.event_id is not null) as is_consumed
 		FROM cargo_lot cl
+			LEFT JOIN cargo_lot_event cle ON cl.id = cle.lot_id
 			JOIN cargo_types ct ON cl.cargo_type_id = ct.id
 			JOIN stations st ON cl.station_id = st.id
 		WHERE 
 			cl.salvage_run_id = ${srid}
+		AND cle.type = 'CONSUME'
 	`;
 });
 
@@ -84,11 +86,14 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			ct_out.id as created_cargo_id
 		FROM cargo_event ce
 				 JOIN stations st ON ce.station_id = st.id
-				 LEFT JOIN cargo_lot cl_in on ce.id = cl_in.consumed_by_id
+				 LEFT JOIN cargo_lot_event cle_in on cle_in.event_id = ce.id
+				 LEFT JOIN cargo_lot cl_in on ce.id = cle_in.lot_id 
 				 JOIN cargo_types ct_in on cl_in.cargo_type_id = ct_in.id
-				 LEFT JOIN cargo_lot cl_out on ce.created_cargo_lot_id = cl_out.id
+				 LEFT JOIN cargo_lot_event cle_out on cle_out.event_id = ce.id
+				 LEFT JOIN cargo_lot cl_out on cle_out.lot_id = cl_out.id
 				 JOIN cargo_types ct_out on cl_out.cargo_type_id = ct_out.id
 		WHERE ce.salvage_run_id = ${srid} AND ce.type = 'REFINE'
+				AND cle_in.type = 'CONSUME' AND cle_out.type = 'CREATE'
 		GROUP BY ce.id, st.id, cl_in.id, ct_in.id, cl_out.id, ct_out.id;
 	`;
 });
@@ -126,10 +131,11 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			ct.name as consumed_cargo_type
 		FROM cargo_event ce
 				JOIN stations st ON ce.station_id = st.id
-			LEFT JOIN public.cargo_lot cl on ce.id = cl.consumed_by_id
+			LEFT JOIN cargo_lot_event cle on ce.id = cle.event_id
+			LEFT JOIN cargo_lot cl on cle.lot_id = cl.id
 				JOIN cargo_types ct on cl.cargo_type_id = ct.id
-		WHERE ce.salvage_run_id = ${srid} AND ce.type = 'SELL'
-		GROUP BY cl.consumed_by_id, ce.id, st.id, ct.id;
+		WHERE ce.salvage_run_id = ${srid} AND ce.type = 'SELL' AND cle.type = 'CONSUME'
+		GROUP BY cl.id, ce.id, st.id, ct.id;
 	`;
 });
 
@@ -187,8 +193,8 @@ export const addRefineryEvent = form(
 					id: number;
 				}[]
 			>`
-		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, consumed_by_id, added_by) 
-		VALUES (${cargo_type}, ${srid}, ${station}, ${cargo_yield}, NULL, ${user_id})
+		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, added_by) 
+		VALUES (${cargo_type}, ${srid}, ${station}, ${cargo_yield}, ${user_id})
 		RETURNING id
 	`
 		)[0].id;
@@ -200,18 +206,18 @@ export const addRefineryEvent = form(
 					id: number;
 				}[]
 			>`
-		INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, finishes_at, fees, price_per_unit, added_by, created_cargo_lot_id)
-		VALUES (${srid}, ${station}, 'REFINE', ${start_time}, ${end_time}, ${fees}, 0, ${user_id}, ${lot_id})
+		INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, finishes_at, fees, price_per_unit, added_by)
+		VALUES (${srid}, ${station}, 'REFINE', ${start_time}, ${end_time}, ${fees}, 0, ${user_id})
 		RETURNING id
 	`
 		)[0].id;
 
-		// update consumed ids
-		await sql`
-			UPDATE cargo_lot
-			SET consumed_by_id = ${event_id}
-			WHERE id in (${consumed_ids})
-		`;
+		// create consumption row
+		for (const lot_id in consumed_ids)
+			await sql`
+				INSERT INTO cargo_lot_event (lot_id, event_id, type) 
+				VALUES (${lot_id}, ${event_id}, 'CONSUME');
+			`;
 	}
 );
 
@@ -249,11 +255,11 @@ export const addSellEvent = form(
 		`
 		)[0].id;
 
-		// update consumed ids
-		await sql`
-			UPDATE cargo_lot
-			SET consumed_by_id = ${event_id}
-			WHERE id in (${consumed_ids})
-		`;
+		// create consumption row
+		for (const lot_id in consumed_ids)
+			await sql`
+				INSERT INTO cargo_lot_event (lot_id, event_id, type)
+				VALUES (${lot_id}, ${event_id}, 'CONSUME');
+			`;
 	}
 );

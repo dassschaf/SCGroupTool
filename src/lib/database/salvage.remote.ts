@@ -153,10 +153,12 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
             st.system as system_name
         FROM
             cargo_event ce
-                JOIN cargo_lot cl on ce.id = cl.consumed_by_id
+                JOIN cargo_lot_event cle ON ce.id = cle.event_id
+                JOIN cargo_lot cl on cle.lot_id = cl.id
                 JOIN cargo_types ct on ct.id = cl.cargo_type_id
                 JOIN stations st on ce.station_id = st.id
         WHERE
+            cle.type = 'CONSUME' and
             ce.type = 'SELL' and ce.price_per_unit > 0
             and ce.salvage_run_id = ${srid};
     `;

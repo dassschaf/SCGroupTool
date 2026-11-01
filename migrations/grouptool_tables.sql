@@ -149,10 +149,6 @@ CREATE TABLE cargo_event
 
     price_per_unit INT,
 
-    created_cargo_lot_id INT
-        REFERENCES "cargo_lot" (id)
-        DEFAULT (NULL),
-
     added_by       TEXT
         REFERENCES "user" (id)
         ON DELETE SET NULL
@@ -167,12 +163,12 @@ CREATE TABLE cargo_lot
     cargo_type_id  INT
         NOT NULL
         REFERENCES "cargo_types" (id)
-        ON DELETE CASCADE,
+            ON DELETE CASCADE,
 
     salvage_run_id INT
         NOT NULL
         REFERENCES "salvage_runs" (id)
-        ON DELETE CASCADE,
+            ON DELETE CASCADE,
 
     station_id     INT
         NOT NULL
@@ -181,14 +177,27 @@ CREATE TABLE cargo_lot
     amount         INT
         NOT NULL,
 
-    -- reference to event iff. consumed
-    consumed_by_id INT
-        REFERENCES "cargo_event" (id) ON DELETE CASCADE
-        DEFAULT (NULL),
-
     added_by       TEXT
         REFERENCES "user" (id)
-        ON DELETE SET NULL
+            ON DELETE SET NULL
+);
+
+CREATE TYPE cargo_lot_event_type AS ENUM ('CREATE', 'CONSUME');
+
+CREATE TABLE cargo_lot_event
+(
+    lot_id INT
+    REFERENCES "cargo_lot" (id)
+    ON DELETE CASCADE,
+
+    event_id INT
+    REFERENCES "cargo_event" (id)
+    ON DELETE CASCADE,
+
+    type cargo_lot_event_type
+    NOT NULL,
+
+    PRIMARY KEY (lot_id, event_id)
 );
 
 CREATE TABLE claim_fees (

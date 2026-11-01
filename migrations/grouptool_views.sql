@@ -11,7 +11,8 @@ SELECT
     ce.created_at as created_at,
     coalesce(ce.finishes_at, ce.created_at) as finishes_at
 FROM "cargo_event" ce
-         JOIN "cargo_lot" cl ON ce.id = cl.consumed_by_id
-         JOIN "cargo_types" ct ON cl.cargo_type_id = ct.id
-         JOIN "stations" st ON ce.station_id = st.id
-GROUP BY cl.consumed_by_id, ce.id, st.id;
+    JOIN cargo_lot_event cle on ce.id = cle.event_id
+    JOIN "cargo_lot" cl ON cle.lot_id = cl.id
+    JOIN "cargo_types" ct ON cl.cargo_type_id = ct.id
+    JOIN "stations" st ON ce.station_id = st.id
+GROUP BY cl.id, ce.id, st.id;
