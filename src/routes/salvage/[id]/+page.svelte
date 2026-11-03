@@ -500,6 +500,9 @@
 					<td>{rj.finishes_at.toLocaleString("en-GB", { timeZone: "UTC" })}</td>
 					<td>{Intl.NumberFormat().format(rj.fees)} aUEC</td>
 					<td>
+						<!-- TODO: turn into a list of consumed cargo items
+							- SELECT ... FROM cargo_lots cl JOIN cargo_lot_events cle ON cl.id = cle.lot_id WHERE cl.id = i (from line 491)
+							- for (const cl in ^^^^^): below format in <ul>? -->
 						{rj.consumed_cargo_type}
 						<br />
 						<small>{Intl.NumberFormat().format(rj.consumed_cargo_amount)} SCU</small>

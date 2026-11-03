@@ -17,9 +17,27 @@
 
 	let { params }: PageProps = $props();
 
+	let cargoSidebarOpen = $state(false);
+	let stationSidebarOpen = $state(false);
+	let anySidebarOpen = $derived(cargoSidebarOpen || stationSidebarOpen);
+	let closeSidebars = () => {
+		cargoSidebarOpen = false;
+		stationSidebarOpen = false;
+	}
+
 	let srid = Number(params.id);
 	if (Number.isNaN(srid)) error(400, "Invalid salvage run ID.");
 </script>
+
+<!-- sidebar backdrop -->
+<div
+		class={[
+		"fixed inset-0 z-50 bg-black/50 transition-opacity",
+		anySidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+	]}
+		onclick={closeSidebars()}
+></div>
+
 
 <div class="flex flex-col">
 	<div class="align-center flex flex-row items-center p-4">

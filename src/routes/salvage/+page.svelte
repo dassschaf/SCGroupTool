@@ -75,7 +75,7 @@
 	</div>
 
 	<!-- add button to open right side sidebar -->
-	<div class="self-end-safe">
+	<div class="self-end">
 		<form {...createSalvageRun}>
 			<Button
 					data-sveltekit-preload-code="off"
