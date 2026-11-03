@@ -147,8 +147,6 @@ CREATE TABLE cargo_event
 
     fees           INT,
 
-    price_per_unit INT,
-
     added_by       TEXT
         REFERENCES "user" (id)
         ON DELETE SET NULL
@@ -179,7 +177,10 @@ CREATE TABLE cargo_lot
 
     added_by       TEXT
         REFERENCES "user" (id)
-            ON DELETE SET NULL
+            ON DELETE SET NULL,
+
+    price_per_unit INT
+        DEFAULT 0
 );
 
 CREATE TYPE cargo_lot_event_type AS ENUM ('CREATE', 'CONSUME');

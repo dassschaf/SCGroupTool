@@ -24,12 +24,13 @@ export const getJoinedSalvageRuns = query(async () =>
             u.image as owner_image,
             s.created_at as created_at,
             COUNT(DISTINCT m.user_id) as member_count,
-            SUM(DISTINCT ces.cargo_amount * ces.price_per_unit - ces.fees) - SUM(cf.fees) as profit,
+            SUM(DISTINCT cl.amount * cl.price_per_unit) - SUM(DISTINCT cf.fees) - SUM(DISTINCT ce.fees) as profit,
             s.is_finished as is_finished
         FROM "salvage_runs" s
                  JOIN "user" u on s.owner_id = u.id
                  JOIN "salvage_run_membership" m on s.id = m.salvage_run_id
-                 LEFT JOIN "cargo_event_summary" ces on s.id = ces.salvage_run_id
+                 LEFT JOIN cargo_lot cl on s.id = cl.salvage_run_id
+				 LEFT JOIN cargo_event ce on s.id = ce.salvage_run_id
                  LEFT JOIN public.claim_fees cf on s.id = cf.salvage_run_id
         WHERE m.user_id = ${locals.user.id}
         GROUP BY s.id, u.id, cf.salvage_run_id;
@@ -147,7 +148,7 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
         system_name: string
     }[]>`
         SELECT
-            ce.price_per_unit * cl.amount as revenue,
+            cl.price_per_unit * cl.amount as revenue,
             ct.name as cargo_name,
             st.name as station_name,
             st.system as system_name
@@ -159,7 +160,7 @@ export const getSalvageRunFinancialOverview = query(z.number().int().positive(),
                 JOIN stations st on ce.station_id = st.id
         WHERE
             cle.type = 'CONSUME' and
-            ce.type = 'SELL' and ce.price_per_unit > 0
+            ce.type = 'SELL' and cl.price_per_unit > 0
             and ce.salvage_run_id = ${srid};
     `;
 

@@ -26,24 +26,24 @@ export const getCargoLotsBySRID = query(z.number().int().positive(), async (srid
 			added_by: string;
 		}[]
 	>`
-		SELECT 
+		SELECT
 			cl.id,
 			cl.amount,
+			cl.price_per_unit,
 			ct.name as cargo_name,
 			ct.is_commodity,
 			ct.is_refinable,
 			st.name as station_name,
 			st.system as system_name,
-			cle.event_id,
 			cl.added_by,
-			(cle.event_id is not null) as is_consumed
+			COALESCE(BOOL_OR(cle.type = 'CONSUME'), false) as is_consumed
 		FROM cargo_lot cl
-			LEFT JOIN cargo_lot_event cle ON cl.id = cle.lot_id
-			JOIN cargo_types ct ON cl.cargo_type_id = ct.id
-			JOIN stations st ON cl.station_id = st.id
-		WHERE 
+				 LEFT JOIN cargo_lot_event cle ON cl.id = cle.lot_id
+				 JOIN cargo_types ct ON cl.cargo_type_id = ct.id
+				 JOIN stations st ON cl.station_id = st.id
+		WHERE
 			cl.salvage_run_id = ${srid}
-		AND cle.type = 'CONSUME'
+		GROUP BY cl.id, ct.id, st.id;
 	`;
 });
 
@@ -63,11 +63,6 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			created_at: Date;
 			finishes_at: Date;
 			fees: number;
-			consumed_cargo_amount: number;
-			consumed_cargo_type: string;
-			created_cargo_amount: number;
-			created_cargo_type: string;
-			created_cargo_id: number;
 			added_by: string;
 		}[]
 	>`
@@ -78,23 +73,45 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 			ce.created_at,
 			ce.finishes_at,
 			ce.fees,
-			ce.added_by,
-			SUM(cl_in.amount) as consumed_cargo_amount,
-			ct_in.name as consumed_cargo_type,
-			cl_out.amount as created_cargo_amount,
-			ct_out.name as created_cargo_type,
-			ct_out.id as created_cargo_id
+			ce.added_by
 		FROM cargo_event ce
 				 JOIN stations st ON ce.station_id = st.id
-				 LEFT JOIN cargo_lot_event cle_in on cle_in.event_id = ce.id
-				 LEFT JOIN cargo_lot cl_in on ce.id = cle_in.lot_id 
-				 JOIN cargo_types ct_in on cl_in.cargo_type_id = ct_in.id
-				 LEFT JOIN cargo_lot_event cle_out on cle_out.event_id = ce.id
-				 LEFT JOIN cargo_lot cl_out on cle_out.lot_id = cl_out.id
-				 JOIN cargo_types ct_out on cl_out.cargo_type_id = ct_out.id
 		WHERE ce.salvage_run_id = ${srid} AND ce.type = 'REFINE'
-				AND cle_in.type = 'CONSUME' AND cle_out.type = 'CREATE'
-		GROUP BY ce.id, st.id, cl_in.id, ct_in.id, cl_out.id, ct_out.id;
+		GROUP BY ce.id, st.id;
+	`;
+});
+
+export const getCargoLotsByEvent = query(z.number().int().positive(), async (event_id) => {
+	const { locals } = getRequestEvent();
+	if (!locals.user) error(401, "Unauthorized");
+
+	return sql<{
+		lot_id: number;
+		type: string;
+		amount: number;
+		added_by: string;
+		station_name: string;
+		system_name: string;
+		cargo_name: string;
+		is_refinable: boolean;
+		is_commodity: boolean;
+	}[]>`
+		SELECT
+			cle.lot_id,
+			cle.type,
+			cl.amount,
+			cl.added_by,
+			st.name as station_name,
+			st.system as system_name,
+			ct.name as cargo_name,
+			ct.is_refinable,
+			ct.is_commodity
+		FROM cargo_event ce
+				 RIGHT JOIN public.cargo_lot_event cle on ce.id = cle.event_id
+				 JOIN public.cargo_lot cl on cle.lot_id = cl.id
+				 JOIN public.stations st on cl.station_id = st.id
+				 JOIN public.cargo_types ct on cl.cargo_type_id = ct.id
+		WHERE ce.id = ${event_id}
 	`;
 });
 
@@ -114,8 +131,6 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			created_at: Date;
 			fees: number;
 			price_per_unit: number;
-			consumed_cargo_amount: number;
-			consumed_cargo_type: string;
 			added_by: string;
 		}[]
 	>`
@@ -125,17 +140,14 @@ export const getSalesEventsBySRID = query(z.number().int().positive(), async (sr
 			st.system as system_name,
 			ce.created_at,
 			ce.fees,
-			ce.price_per_unit,
-			ce.added_by,
-			SUM(cl.amount) as consumed_cargo_amount,
-			ct.name as consumed_cargo_type
+			cl.price_per_unit,
+			ce.added_by
 		FROM cargo_event ce
 				JOIN stations st ON ce.station_id = st.id
 			LEFT JOIN cargo_lot_event cle on ce.id = cle.event_id
 			LEFT JOIN cargo_lot cl on cle.lot_id = cl.id
-				JOIN cargo_types ct on cl.cargo_type_id = ct.id
 		WHERE ce.salvage_run_id = ${srid} AND ce.type = 'SELL' AND cle.type = 'CONSUME'
-		GROUP BY cl.id, ce.id, st.id, ct.id;
+		GROUP BY ce.id, st.id, cl.id;
 	`;
 });
 
@@ -156,8 +168,8 @@ export const addCargoLot = form(
 
 		// insert new record
 		return sql`
-		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, consumed_by_id, added_by)
-		VALUES (${cargo_type}, ${srid}, ${station}, ${amount}, NULL, ${locals.user.id})
+		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, added_by)
+		VALUES (${cargo_type}, ${srid}, ${station}, ${amount}, ${locals.user.id})
 	`;
 	}
 );
