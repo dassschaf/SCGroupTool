@@ -3,6 +3,7 @@
 
     // imported components
     import FormSidebar from "$lib/components/FormSidebar.svelte"
+    import Input from "$lib/components/Input.svelte";
 
     // properties
     let {
@@ -36,7 +37,7 @@
             autocomplete="off"
             autofocus
             class="w-full mb-2"
-            placeholder={serachPlaceholder}
+            placeholder={searchPlaceholder}
             type="search"
         />
         <div class="flex flex-1">
