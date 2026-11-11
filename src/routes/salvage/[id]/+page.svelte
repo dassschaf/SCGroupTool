@@ -22,6 +22,7 @@
 	} from "$lib/database/salvage.remote.ts";
 	import {
 		addCargoLot,
+		getCargoLotsByEvent,
 		getCargoLotsBySRID,
 		getRefineryEventsBySRID,
 		getSalesEventsBySRID
@@ -53,12 +54,12 @@
 		addCargoLotSidebarOpen = false;
 		addRefineryJobSidebarOpen = false;
 		addCargoSaleSidebarOpen = false;
-	}
+	};
 
 	// form input values
 	let userSearchValue = $state("");
 	let clTypeSearchValue = $state("");
-	let clTypeSearchId = $state(-1)
+	let clTypeSearchId = $state(-1);
 	let clStationSearchValue = $state("");
 	let clStationSearchId = $state(-1);
 	let clAmountValue = $state(0);
@@ -66,8 +67,7 @@
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === "Escape")
-			closeSidebars();
+		if (e.key === "Escape") closeSidebars();
 	}}
 />
 
@@ -97,7 +97,7 @@
 
 	<!-- user list -->
 	<form class="flex justify-center align-middle" {...addUserToSalvageRun}>
-		<input {...addUserToSalvageRun.fields.salvage_run_id.as("hidden", srid)}/>
+		<input {...addUserToSalvageRun.fields.salvage_run_id.as("hidden", srid)} />
 
 		{#each searchUserByName("%" + userSearchValue + "%").current as user (user.id)}
 			<Button
@@ -115,25 +115,28 @@
 
 <!-- add cargo lot sidebar -->
 <FormSidebar bind:sidebarFlag={addCargoLotSidebarOpen} formHeading="Add a cargo item">
-	<div class="flex flex-row flex-1">
+	<div class="flex flex-1 flex-row">
 		<div class="flex flex-col p-2">
 			<small class="p-2">Cargo type</small>
 			<Input
 				bind:value={clTypeSearchValue}
 				autocomplete="off"
 				autofocus
-				class="w-full mb-2"
+				class="mb-2 w-full"
 				placeholder="Search cargo types..."
 				type="search"
 			/>
 			{#if clTypeSearchValue.length > 2}
-				{#each (await getCargoTypes()).filter(ct =>
-					ct.name.toLowerCase().includes(clTypeSearchValue.toLowerCase())
-				) as ct (ct.id)}
-					<Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
-						clTypeSearchId = ct.id;
-						clTypeSearchValue = ""; // reset search
-					}}>
+				{#each (await getCargoTypes()).filter((ct) => ct.name
+						.toLowerCase()
+						.includes(clTypeSearchValue.toLowerCase())) as ct (ct.id)}
+					<Button
+						class="m-2 min-h-fit min-w-fit p-2"
+						onclick={() => {
+							clTypeSearchId = ct.id;
+							clTypeSearchValue = ""; // reset search
+						}}
+					>
 						{ct.name}
 					</Button>
 				{/each}
@@ -147,18 +150,21 @@
 				bind:value={clStationSearchValue}
 				autocomplete="off"
 				autofocus
-				class="w-full mb-2"
+				class="mb-2 w-full"
 				placeholder="Search stations..."
 				type="search"
 			/>
 			{#if clStationSearchValue.length > 2}
-				{#each (await getStations()).filter((st) =>
-					st.name.toLowerCase().includes(clStationSearchValue.toLowerCase())
-				) as st (st.id)}
-					<Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
-						clStationSearchId = st.id;
-						clStationSearchValue = ""; // reset search
-					}}>
+				{#each (await getStations()).filter((st) => st.name
+						.toLowerCase()
+						.includes(clStationSearchValue.toLowerCase())) as st (st.id)}
+					<Button
+						class="m-2 min-h-fit min-w-fit p-2"
+						onclick={() => {
+							clStationSearchId = st.id;
+							clStationSearchValue = ""; // reset search
+						}}
+					>
 						{st.name}
 						<br />
 						<small>{st.system}</small>
@@ -173,7 +179,7 @@
 				bind:value={clAmountValue}
 				autocomplete="off"
 				autofocus
-				class="w-full mb-2"
+				class="mb-2 w-full"
 				placeholder="Search cargo types..."
 				type="number"
 			/>
@@ -184,26 +190,31 @@
 		<div class="flex flex-row">
 			<div class="flex-1 p-2">
 				<small>Selected cargo:</small>
-				<p>{clTypeSearchId !== -1 ? (await getCargoTypes()).find(e => e.id === clTypeSearchId).name : "—"}</p>
-				<input {...addCargoLot.fields.cargo_type.as("hidden", clTypeSearchId)}/>
+				<p>
+					{clTypeSearchId !== -1
+						? (await getCargoTypes()).find((e) => e.id === clTypeSearchId).name
+						: "—"}
+				</p>
+				<input {...addCargoLot.fields.cargo_type.as("hidden", clTypeSearchId)} />
 			</div>
 			<div class="flex-1 p-2">
 				<small>Selected station:</small>
-				<p>{clStationSearchId !== -1 ? (await getStations()).find(s => s.id === clStationSearchId).name : "—"}</p>
-				<input {...addCargoLot.fields.station.as("hidden", clStationSearchId)}/>
+				<p>
+					{clStationSearchId !== -1
+						? (await getStations()).find((s) => s.id === clStationSearchId).name
+						: "—"}
+				</p>
+				<input {...addCargoLot.fields.station.as("hidden", clStationSearchId)} />
 			</div>
 			<div class="flex-1 p-2">
 				<small>Amount:</small>
 				<p>{clAmountValue > 0 ? `${clAmountValue} SCU` : "—"}</p>
-				<input {...addCargoLot.fields.amount.as("hidden", clAmountValue)}/>
+				<input {...addCargoLot.fields.amount.as("hidden", clAmountValue)} />
 			</div>
 		</div>
 		<div class="h-2"></div>
 		<div class="flex flex-row-reverse">
-			<Button
-					class="h-12 min-w-fit p-4"
-					{...addCargoLot.fields.srid.as("submit", srid)}
-			>
+			<Button class="h-12 min-w-fit p-4" {...addCargoLot.fields.srid.as("submit", srid)}>
 				Add cargo lot
 			</Button>
 		</div>
@@ -211,14 +222,13 @@
 </FormSidebar>
 
 <!-- add refinery job sidebar -->
-<FormSidebar bind:sidebarFlag={addRefineryJobSidebarOpen} formHeading="Add refinery job">
-	
-</FormSidebar>
+<FormSidebar
+	bind:sidebarFlag={addRefineryJobSidebarOpen}
+	formHeading="Add refinery job"
+></FormSidebar>
 
 <!-- add cargo sale sidebar -->
-<FormSidebar bind:sidebarFlag={addCargoSaleSidebarOpen} formHeading="Add cargo sale">
-
-</FormSidebar>
+<FormSidebar bind:sidebarFlag={addCargoSaleSidebarOpen} formHeading="Add cargo sale"></FormSidebar>
 
 <!-- headline -->
 <PageHeading>
@@ -228,7 +238,11 @@
 <div class="flex flex-row">
 	<!-- owner & financial info -->
 	<div class="m-4 flex-3 flex-col rounded-md bg-gray-200 p-4">
-		<p class="text-center font-semibold">Financial overview: {Intl.NumberFormat().format((await getSalvageRunFinancialOverview(data.id)).profit)} aUEC</p>
+		<p class="text-center font-semibold">
+			Financial overview: {Intl.NumberFormat().format(
+				(await getSalvageRunFinancialOverview(data.id)).profit
+			)} aUEC
+		</p>
 		<div class="flex flex-row">
 			<div class="flex-1">
 				<table
@@ -346,7 +360,7 @@
 		{#each await getSalvageRunMemberList(data.id) as member (member.id)}
 			<div
 				class={[
-					"flex flex-row justify-center align-middle",
+					"flex flex-row justify-start align-middle pl-2",
 					member.was_paid
 						? "bg-[repeating-linear-gradient(45deg,var(--color-green-400)_0,var(--color-green-400)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
 						: ""
@@ -362,10 +376,16 @@
 						{#if (await getSalvageRunOwner(data.id)).id === data.user.id}
 							<!-- TODO: add onclick handlers (mark paid, remove from run) -->
 							<Button class="h-6 min-w-fit p-2"
-								><Icon class="h-4 w-4 text-secondary-600" icon={faMoneyBillTransfer} /></Button
+								><Icon
+									class="h-4 w-4"
+									icon={faMoneyBillTransfer}
+								/></Button
 							>
 							<Button class="h-6 min-w-fit p-2"
-								><Icon class="h-4 w-4 text-secondary-600" icon={faUserMinus} /></Button
+								><Icon
+									class="h-4 w-4"
+									icon={faUserMinus}
+								/></Button
 							>
 						{/if}
 					</div>
@@ -412,10 +432,13 @@
 		</thead>
 		<tbody>
 			{#each await getCargoLotsBySRID(data.id) as cl (cl.id)}
-				<tr class={[
-						cl.is_consumed ?
-						"bg-[repeating-linear-gradient(45deg,var(--color-secondary-200)_0,var(--color-secondary-200)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed" :
-						"hover:bg-gray-300"]}>
+				<tr
+					class={[
+						cl.is_consumed
+							? "bg-[repeating-linear-gradient(45deg,var(--color-secondary-200)_0,var(--color-secondary-200)_2px,transparent_0,transparent_50%)] bg-size-[10px_10px] bg-fixed"
+							: "hover:bg-gray-300"
+					]}
+				>
 					<td>{cl.id}</td>
 					<td>{cl.cargo_name}</td>
 					<td>{cl.amount} SCU</td>
@@ -452,10 +475,7 @@
 	</table>
 	<div class="h-8"></div>
 	<div class="flex flex-row-reverse">
-		<Button
-			class="h-10 min-w-fit p-2"
-			href="/salvage/{srid}/addCargo"
-		>
+		<Button class="h-10 min-w-fit p-2" href="/salvage/{srid}/addCargo">
 			Add cargo lot <Icon icon={faPlus} class="h-8 w-8" />
 		</Button>
 	</div>
@@ -483,36 +503,43 @@
 				<th>Fees</th>
 				<th>Used cargo</th>
 				<th>Yield</th>
-				<th></th>
-				<!-- actions -->
+				<th><!-- actions --></th>
 			</tr>
 		</thead>
 		<tbody>
-			{#each await getRefineryEventsBySRID(data.id) as rj, i (i)}
+			{#each await getRefineryEventsBySRID(data.id) as rj, event_id (rj.id)}
 				<tr>
 					<td>{rj.id}</td>
 					<td>
-						{rj.station_name}
-						<br />
+						{rj.station_name}<br />
 						<small>{rj.system_name}</small>
 					</td>
 					<td>{rj.created_at.toLocaleString("en-GB", { timeZone: "UTC" })}</td>
 					<td>{rj.finishes_at.toLocaleString("en-GB", { timeZone: "UTC" })}</td>
 					<td>{Intl.NumberFormat().format(rj.fees)} aUEC</td>
 					<td>
-						<!-- TODO: turn into a list of consumed cargo items
-							- SELECT ... FROM cargo_lots cl JOIN cargo_lot_events cle ON cl.id = cle.lot_id WHERE cl.id = i (from line 491)
-							- for (const cl in ^^^^^): below format in <ul>? -->
-						{rj.consumed_cargo_type}
-						<br />
-						<small>{Intl.NumberFormat().format(rj.consumed_cargo_amount)} SCU</small>
+						<ul class="[&_li]:py-2">
+							{#each await getCargoLotsByEvent( { event_id: rj.id, event_type: "CONSUME" } ) as cl, lot_id (lot_id)}
+								<li>
+									{cl.cargo_name} <br />
+									<small>{cl.amount} SCU<!-- at {cl.station_name} / {cl.system_name}--></small>
+								</li>
+							{:else}
+								<li>No related cargo lots found.</li>
+							{/each}
+						</ul>
 					</td>
 					<td>
-						{rj.created_cargo_type}
-						<br />
-						<small
-							>{Intl.NumberFormat().format(rj.created_cargo_amount)} SCU, item #{rj.created_cargo_id}</small
-						>
+						<ul class="[&_li]:py-2">
+							{#each await getCargoLotsByEvent( { event_id: rj.id, event_type: "CREATE" } ) as cl, lot_id (lot_id)}
+								<li>
+									{cl.cargo_name} <br />
+									<small>{cl.amount} SCU<!-- at {cl.station_name} / {cl.system_name}--></small>
+								</li>
+							{:else}
+								<li>No related cargo lots found.</li>
+							{/each}
+						</ul>
 					</td>
 					<td class="w-32">
 						<Button class="m-4 h-6 min-w-fit p-2">
@@ -581,16 +608,23 @@
 						{Intl.NumberFormat().format(cs.fees)} aUEC
 					</td>
 					<td>
-						{Intl.NumberFormat().format(cs.consumed_cargo_amount * cs.price_per_unit)} aUEC
+						{Intl.NumberFormat().format(
+                            (await getCargoLotsByEvent({ event_id: cs.id, event_type: "CONSUME" })).reduce(
+                                (sum, lot) => (sum + lot.amount * lot.price_per_unit),
+                            	0
+                        ))} aUEC
 					</td>
 					<td>
-						{cs.consumed_cargo_type}
-						<br />
-						<small
-							>{cs.consumed_cargo_amount} SCU @ {Intl.NumberFormat().format(
-								cs.price_per_unit
-							)} aUEC</small
-						>
+                        <ul class="[&_li]:py-2">
+                            {#each await getCargoLotsByEvent( { event_id: cs.id, event_type: "CONSUME" } ) as cl, lot_id (lot_id)}
+                                <li>
+                                    {cl.cargo_name} <br />
+                                    <small>#{cl.lot_id} &mdash; {cl.amount} SCU @ {Intl.NumberFormat().format(cl.price_per_unit)} aUEC </small>
+                                </li>
+                            {:else}
+                                <li>No related cargo lots found.</li>
+                            {/each}
+                        </ul>
 					</td>
 					<td class="w-32">
 						<Button class="m-4 h-6 min-w-fit p-2">

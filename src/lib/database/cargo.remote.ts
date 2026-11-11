@@ -81,14 +81,18 @@ export const getRefineryEventsBySRID = query(z.number().int().positive(), async 
 	`;
 });
 
-export const getCargoLotsByEvent = query(z.number().int().positive(), async (event_id) => {
+export const getCargoLotsByEvent = query(z.object({
+	event_id: z.number().int().positive(),
+	event_type: z.optional(z.literal(["CONSUME", "CREATE"]))
+}), async ({ event_id, event_type }) => {
 	const { locals } = getRequestEvent();
 	if (!locals.user) error(401, "Unauthorized");
 
 	return sql<{
 		lot_id: number;
-		type: string;
+		event_type: string;
 		amount: number;
+		price_per_unit: number;
 		added_by: string;
 		station_name: string;
 		system_name: string;
@@ -98,8 +102,9 @@ export const getCargoLotsByEvent = query(z.number().int().positive(), async (eve
 	}[]>`
 		SELECT
 			cle.lot_id,
-			cle.type,
+			cle.type AS event_type,
 			cl.amount,
+			cl.price_per_unit,
 			cl.added_by,
 			st.name as station_name,
 			st.system as system_name,
@@ -111,7 +116,8 @@ export const getCargoLotsByEvent = query(z.number().int().positive(), async (eve
 				 JOIN public.cargo_lot cl on cle.lot_id = cl.id
 				 JOIN public.stations st on cl.station_id = st.id
 				 JOIN public.cargo_types ct on cl.cargo_type_id = ct.id
-		WHERE ce.id = ${event_id}
+		WHERE ce.id = ${event_id} 
+		  and cle.type::text LIKE ${event_type ?? "%"}
 	`;
 });
 
