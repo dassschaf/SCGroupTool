@@ -2,4 +2,8 @@
     import { page } from '$app/state';
 </script>
 
-<h1>{page.status} {page.error.message}</h1>
+<p class="p-4">
+    {page.status}
+    <br/>
+    <small>{page.error.message}</small>
+</p>
