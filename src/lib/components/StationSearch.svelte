@@ -5,14 +5,17 @@ import Button from "$lib/components/Button.svelte";
 
 let searchValue = $state("");
 let {
-    id = $bindable(-1)
+    id = $bindable(-1),
+    sidebarFlag = $bindable(false)
+}: {
+    id: number;
+    sidebarFlag: boolean;
 } = $props();
 </script>
 
 <div class="flex flex-col p-2">
     <small class="p-2">Station</small>
     <Input
-            id="clStationSearch"
             bind:value={searchValue}
             autocomplete="off"
             autofocus
@@ -20,18 +23,21 @@ let {
             placeholder="Search stations..."
             type="search"
     />
-    {#if searchValue.length > 2}
-        {#each (await getStations()).filter((st) =>
-            st.name.toLowerCase().includes(searchValue.toLowerCase())
-        ) as st (st.id)}
-            <Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
+    <div class="flex flex-1 p-2 flex-wrap">
+        {#if searchValue.length > 2}
+            {#each (await getStations()).filter((st) =>
+                st.name.toLowerCase().includes(searchValue.toLowerCase())
+            ) as st (st.id)}
+                <Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
 						id = st.id;
 						searchValue = ""; // reset search
+						sidebarFlag = false; // close sidebar
 					}}>
-                {st.name}
-                <br />
-                <small>{st.system}</small>
-            </Button>
-        {/each}
-    {/if}
+                    {st.name}
+                    <br />
+                    <small>{st.system}</small>
+                </Button>
+            {/each}
+        {/if}
+    </div>
 </div>

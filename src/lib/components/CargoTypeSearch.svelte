@@ -1,9 +1,41 @@
 <script lang="ts">
-    import { getCargoTypes } from "$lib/database/universe.remote"
-
-    import Input from "$lib/components/Input.svelte"
-    import Button from "$lib/components/Button.svelte"
+    import {getCargoTypes} from "$lib/database/universe.remote";
+    import Input from "$lib/components/Input.svelte";
+    import Button from "$lib/components/Button.svelte";
 
     let searchValue = $state("");
-    let
+    let {
+        id = $bindable(-1),
+        sidebarFlag = $bindable(false)
+    }: {
+        id: number;
+        sidebarFlag: boolean;
+    } = $props();
 </script>
+
+<div class="flex flex-col p-2">
+    <small class="p-2">Cargo type</small>
+    <Input
+            bind:value={searchValue}
+            autocomplete="off"
+            autofocus
+            class="w-full mb-2"
+            placeholder="Search cargo types..."
+            type="search"
+    />
+    <div class="flex flex-1 p-2 flex-wrap">
+        {#if searchValue.length > 2}
+            {#each (await getCargoTypes()).filter((ct) =>
+                ct.name.toLowerCase().includes(searchValue.toLowerCase())
+            ) as ct (ct.id)}
+                <Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
+						id = ct.id;
+						searchValue = ""; // reset search
+						sidebarFlag = false; // close sidebar
+					}}>
+                    {ct.name}
+                </Button>
+            {/each}
+        {/if}
+    </div>
+</div>
