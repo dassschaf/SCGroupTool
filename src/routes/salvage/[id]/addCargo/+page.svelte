@@ -61,7 +61,7 @@
 			<div class="flex flex-row">
 				<div class="flex-1 p-2">
 					<small>Selected cargo:</small>
-					<div class="flex flex-row">
+					<div class="flex flex-row py-1">
 						<p class="flex-1">
 							{typeID !== 0
 								? (await getCargoTypes()).find((e) => e.id === typeID).name
@@ -81,7 +81,7 @@
 				</div>
 				<div class="flex-1 p-2">
 					<small>Selected station:</small>
-					<div class="flex flex-row">
+					<div class="flex flex-row py-1">
 						<p class="flex-1">
 							{stationID !== 0
 								? (await getStations()).find((s) => s.id === stationID).name
@@ -101,10 +101,6 @@
 				</div>
 				<div class="flex-1 p-2">
 					<small>Amount:</small>
-					<!--
-					<p>{cargoAmount > 0 ? `${cargoAmount} SCU` : "—"}</p>
-					<input {...addCargoLot.fields.amount.as("hidden", cargoAmount)} />
-					-->
 					<Input
 						name="amount"
 						bind:value={cargoAmount}

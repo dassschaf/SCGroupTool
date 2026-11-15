@@ -1,7 +1,7 @@
 import { getRequestEvent, query, form } from "$app/server";
 import { sql } from "bun";
 import * as z from "zod";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { isSalvageRunMember } from "$lib/database/salvage.remote";
 
 export const getCargoLotsBySRID = query(z.number().int().positive(), async (srid) => {
@@ -173,10 +173,13 @@ export const addCargoLot = form(
 			error(401, "You are no member of this salvage run (#" + srid + ")!");
 
 		// insert new record
-		return sql`
-		INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, added_by)
-		VALUES (${cargo_type}, ${srid}, ${station}, ${amount}, ${locals.user.id})
-	`;
+		await sql`
+			INSERT INTO cargo_lot (cargo_type_id, salvage_run_id, station_id, amount, added_by)
+			VALUES (${cargo_type}, ${srid}, ${station}, ${amount}, ${locals.user.id})
+		`;
+
+		// redirect to the salvage run page after insertion.
+		redirect(303, `/salvage/${srid}`);
 	}
 );
 
@@ -267,11 +270,18 @@ export const addSellEvent = form(
 					id: number;
 				}[]
 			>`
-			INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, fees, price_per_unit, added_by) 
-			VALUES (${srid}, ${station}, 'SELL', ${current_time}, ${fees}, ${price_per_unit}, ${user_id})
+			INSERT INTO cargo_event (salvage_run_id, station_id, type, created_at, fees, added_by) 
+			VALUES (${srid}, ${station}, 'SELL', ${current_time}, ${fees}, ${user_id})
 			RETURNING id
 		`
 		)[0].id;
+
+		// update sell prices
+		await sql`
+			UPDATE cargo_lot
+			SET price_per_unit = ${price_per_unit}
+			WHERE id in ${consumed_ids}
+		`;
 
 		// create consumption row
 		for (const lot_id in consumed_ids)
