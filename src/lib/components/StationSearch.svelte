@@ -23,19 +23,21 @@ let {
             placeholder="Search stations..."
             type="search"
     />
-    <div class="flex flex-1 p-2 flex-wrap">
+    <div class="flex flex-1 p-2 flex-wrap overflow-y-scroll">
         {#if searchValue.length > 2}
             {#each (await getStations()).filter((st) =>
                 st.name.toLowerCase().includes(searchValue.toLowerCase())
             ) as st (st.id)}
-                <Button class="m-2 min-h-fit min-w-fit p-2" onclick={() => {
+                <Button class="m-2 h-fit p-2" onclick={() => {
 						id = st.id;
 						searchValue = ""; // reset search
 						sidebarFlag = false; // close sidebar
 					}}>
-                    {st.name}
-                    <br />
-                    <small>{st.system}</small>
+                    <p>
+                        {st.name}
+                        <br />
+                        <small>{st.system}</small>
+                    </p>
                 </Button>
             {/each}
         {/if}
