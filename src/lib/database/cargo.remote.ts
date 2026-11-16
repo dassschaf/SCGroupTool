@@ -179,6 +179,7 @@ export const addCargoLot = form(
 		`;
 
 		// redirect to the salvage run page after insertion.
+		void getCargoLotsBySRID(srid).refresh();
 		redirect(303, `/salvage/${srid}`);
 	}
 );
@@ -239,6 +240,13 @@ export const addRefineryEvent = form(
 				INSERT INTO cargo_lot_event (lot_id, event_id, type) 
 				VALUES (${lot_id}, ${event_id}, 'CONSUME');
 			`;
+
+		// refresh and redirect to salvage run page
+		void getRefineryEventsBySRID(srid).refresh();
+		void getCargoLotsBySRID(srid).refresh();
+		void getCargoLotsByEvent({ event_id, event_type: "CONSUME" }).refresh();
+		void getCargoLotsByEvent({ event_id, event_type: "CREATE" }).refresh();
+		redirect(303, `/salvage/${srid}`);
 	}
 );
 
@@ -289,5 +297,11 @@ export const addSellEvent = form(
 				INSERT INTO cargo_lot_event (lot_id, event_id, type)
 				VALUES (${lot_id}, ${event_id}, 'CONSUME');
 			`;
+
+		// refresh and redirect to salvage run page
+		void getSalesEventsBySRID(srid).refresh();
+		void getCargoLotsByEvent({ event_id: event_id, event_type: "CONSUME" }).refresh();
+		void getCargoLotsBySRID(srid).refresh();
+		redirect(303, `/salvage/${srid}`);
 	}
 );
