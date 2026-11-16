@@ -6,7 +6,7 @@
         children
     }: {
         class?: ClassValue
-    } & HTMLBaseAttributes = $props;
+    } & HTMLBaseAttributes = $props();
 </script>
 
 <table
@@ -20,5 +20,5 @@
 		classValue
 	]}
 >
-    {@render children()}
+    {@render children?.()}
 </table>
