@@ -1,5 +1,6 @@
 import { query } from "$app/server";
 import { sql } from "bun";
+import * as z from "zod";
 
 enum LandingPadSizes {
 	S = "S",
@@ -30,6 +31,29 @@ export const getStations = query(async () => {
 	`;
 });
 
+export const getStationById = query(z.number().int().positive(), async (id) => {
+	return (await sql<{
+		id: number,
+		name: string,
+		system: string,
+		largest_pad: LandingPadSizes,
+		has_refinery: boolean,
+		has_market: boolean
+	}[]>`
+		SELECT
+			id,
+			name,
+			system,
+			largest_pad,
+			has_refinery,
+			has_market
+		FROM
+			stations
+		WHERE
+			id = ${id};
+	`)[0];
+});
+
 // Get a list of all cargo types currently in the database
 export const getCargoTypes = query(async () => {
 	return await sql<{
@@ -46,4 +70,25 @@ export const getCargoTypes = query(async () => {
 		FROM 
 			cargo_types;
 	`;
-})
+});
+
+export const getCargoTypeById = query(z.number().int().positive(), async (id) => {
+	return (await sql<
+		{
+			id: number;
+			name: string;
+			is_refinable: boolean;
+			is_commodity: boolean;
+		}[]
+	>`
+		SELECT
+			id,
+			name,
+			is_refinable,
+			is_commodity
+		FROM 
+			cargo_types
+		WHERE
+			id = ${id}
+	`)[0];
+});
