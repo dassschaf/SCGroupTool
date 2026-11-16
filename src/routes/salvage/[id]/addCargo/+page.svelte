@@ -2,7 +2,7 @@
 	import PageHeading from "$lib/components/PageHeading.svelte";
 	import FormSidebar from "$lib/components/FormSidebar.svelte";
 	import type { PageProps } from "./$types";
-	import { getCargoTypes, getStations } from "$lib/database/universe.remote";
+	import {getCargoTypeById, getCargoTypes, getStationById, getStations} from "$lib/database/universe.remote";
 	import Input from "$lib/components/Input.svelte";
 	import Button from "$lib/components/Button.svelte";
 	import Icon from "$lib/components/Icon.svelte";
@@ -64,7 +64,7 @@
 					<div class="flex flex-row py-1">
 						<p class="flex-1">
 							{typeID !== 0
-								? (await getCargoTypes()).find((e) => e.id === typeID).name
+								? (await getCargoTypeById(typeID)).name
 								: "—"}
 						</p>
 						<Button
@@ -83,9 +83,13 @@
 					<small>Selected station:</small>
 					<div class="flex flex-row py-1">
 						<p class="flex-1">
-							{stationID !== 0
-								? (await getStations()).find((s) => s.id === stationID).name
-								: "—"}
+							{#if stationID !== 0}
+								{(await getStationById(stationID)).name}
+								<br>
+								<small>{(await getStationById(stationID)).system} &mdash; Refinery: {(await getStationById(stationID)).has_refinery} &mdash; Market: {(await getStationById(stationID)).has_market}</small>
+							{:else}
+								&mdash;
+							{/if}
 						</p>
 						<Button
 							class="h-6 min-w-fit p-2"
@@ -103,12 +107,12 @@
 					<small>Amount:</small>
 					<Input
 						name="amount"
+						type="number"
 						bind:value={cargoAmount}
 						autocomplete="off"
 						autofocus
 						class="mb-2 w-full"
 						placeholder="Search cargo types..."
-						type="number"
 					/>
 				</div>
 			</div>
